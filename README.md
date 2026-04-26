@@ -1,0 +1,1 @@
+# KEY_MANAGE_IFPI
