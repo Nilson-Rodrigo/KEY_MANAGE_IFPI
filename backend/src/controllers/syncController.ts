@@ -19,9 +19,11 @@ export async function syncEvents(req: Request, res: Response) {
     return;
   }
 
+
   const applied: string[] = [];
   const conflicts: string[] = [];
   const skipped: string[] = [];
+
 
   for (const event of events) {
     // 1. Verifica se o evento já existe (evita duplicidade)
