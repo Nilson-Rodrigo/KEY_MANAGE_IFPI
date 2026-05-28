@@ -10,7 +10,7 @@ Autenticação e autorização são áreas críticas de segurança. Implementar 
 
 Decision
 --------
-Adotamos **Supabase Auth** como solução de autenticação para o MVP. O backend validará tokens JWT/Session gerados pelo Supabase e aplicará autorização baseada em claims/roles conforme necessário. Usuários poderão ser sincronizados localmente quando vinculados a domínios de negócio.
+Adotamos o serviço de autenticação da plataforma BaaS como solução de autenticação para o MVP. O backend validará tokens JWT/Session gerados pelo provedor e aplicará autorização baseada em claims/roles conforme necessário. Usuários poderão ser sincronizados localmente quando vinculados a domínios de negócio.
 
 Consequences
 ------------
@@ -20,7 +20,7 @@ Consequences
 
 Implementation notes
 --------------------
-- Environment variables: `SUPABASE_URL`, `SUPABASE_ANON_KEY` (frontend) and `SUPABASE_SERVICE_ROLE_KEY` (server-only) must be stored as secrets.
-- Token validation: for server-side verification use the Supabase client (`@supabase/supabase-js`) or verify JWTs using the project's JWKS endpoint. For sensitive operations prefer server-side checks using the service role key.
-- User data: keep a `profiles` table (or equivalent) in Postgres to store domain-related user attributes; rely on Supabase Auth for authentication and link to `profiles` via `user_id`.
-- Row-Level Security (RLS): when using Supabase Postgres consider RLS policies for fine-grained DB access; document policies and test thoroughly.
+- Environment variables: store provider-specific variables such as `PROVIDER_URL`, `PROVIDER_ANON_KEY` (frontend) and `PROVIDER_SERVICE_ROLE_KEY` (server-only) as secrets.
+- Token validation: for server-side verification use the provider SDK or verify JWTs using the provider's JWKS endpoint. For sensitive operations prefer server-side checks using the service role key.
+- User data: keep a `profiles` table (or equivalent) in Postgres to store domain-related user attributes; rely on the provider's Auth for authentication and link to `profiles` via `user_id`.
+- Row-Level Security (RLS): when using the provider Postgres consider RLS policies for fine-grained DB access; document policies and test thoroughly.
