@@ -11,6 +11,7 @@ Este diretório reúne as entregas e artefatos solicitados pelo professor e pela
 - `ADRs/` — Registro de Decisões Arquiteturais (ADRs já existentes).
 - `CONTRIBUTORS.md` — Lista de integrantes.
 - `PROCUREMENT.md` — Licitações / aquisições.
+- `BRANCHING_POLICY.md` — Regras simples para organizar as branches.
 
 Instruções rápidas
 
