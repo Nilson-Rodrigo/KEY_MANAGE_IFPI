@@ -71,11 +71,12 @@ export async function syncEvents(req: Request, res: Response) {
 // GET /api/sync/status/:deviceId
 export async function getSyncStatus(req: Request, res: Response) {
   const { deviceId } = req.params;
+  const normalizedDeviceId = Array.isArray(deviceId) ? deviceId[0] : deviceId;
 
-  const rows = await adapter.getEventsByDevice(deviceId);
+  const rows = await adapter.getEventsByDevice(normalizedDeviceId);
 
   res.json({
-    device_id: deviceId,
+    device_id: normalizedDeviceId,
     total: rows.length,
     events: rows,
   });
