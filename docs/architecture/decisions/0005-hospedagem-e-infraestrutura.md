@@ -1,25 +1,51 @@
 
 # ADR 0005 — Hospedagem e Infraestrutura
 
-- **Status:** Accepted
+- **Status:** Aceito
 - **Data:** 2026-05-28
+- **Autor:** CoreTech
+- **ID:** ADR 0005
 
-Context
+Contexto
 -------
-Decidir o modelo de hospedagem impacta custo, velocidade de deploy, e a complexidade operacional. Opções incluem Serverless/BaaS e containers gerenciados.
+Escolher hospedagem e infraestrutura influencia diretamente custo, tempo de entrega e complexidade operacional. Para o MVP, priorizamos velocidade e previsibilidade operacional, considerando opções como BaaS/Serverless e containers em provedores cloud.
 
-Decision
+Decisão
 --------
-Para acelerar o MVP e reduzir esforço operacional adotamos uma plataforma BaaS gerenciada (fornece Postgres gerenciado, autenticação e storage). Complementos serverless ou funções podem ser usados conforme necessário.
+Adotamos **BaaS / serviços gerenciados** para a fase inicial do MVP, utilizando provedor que ofereça Postgres gerenciado, autenticação e storage (ex.: Railway, Neon). Funções serverless/Edge podem ser usadas para rotinas específicas.
 
-Consequences
+Consequências
 ------------
-- O projeto dependerá da plataforma BaaS para hosting do banco Postgres, autenticação e storage de arquivos durante o MVP.
-- Menor necessidade imediata de criar `Dockerfile` e pipelines complexos; ainda recomenda-se CI para deploys e migrations do schema.
-- Para requisitos avançados (workloads específicos, serviços externos) podemos integrar serviços adicionais ou migrar componentes para containers gerenciados, documentando via ADRs futuras.
 
-Implementation notes
+- Positivas:
+	- Deploys rápidos com menor overhead operacional.
+	- Menos trabalho inicial com infraestrutura e monitoramento.
+
+- Negativas / Trade-offs:
+	- Dependência do provedor e possível lock-in.
+	- Limitações na configuração e possíveis custos em produção.
+
+Mitigações
+---------
+
+- Documentar infra e manter exemplos de `docker-compose` e comandos de migração para facilitar migração futura.
+- Isolar integrações do provider em adaptadores para reduzir acoplamento.
+- Monitorar uso e custos; definir alertas e limites no provedor.
+
+Critérios de aceitação
+----------------------
+
+- Processo de deploy documentado e automatizado (CI/CD) para frontend e backend.
+- Variáveis de ambiente e segredos centralizados em secrets do CI e exemplos em `.env.example`.
+
+Notas de implementação
 --------------------
-- Secrets management: store provider-specific secrets such as `PROVIDER_SERVICE_ROLE_KEY`, `PROVIDER_URL` and `DATABASE_URL` in CI/CD secret stores (GitHub Actions secrets, Render secrets, etc.). Never expose service role keys in frontend code.
-- Edge/Functions: some BaaS platforms provide Edge/Function capabilities — evaluate them for lightweight server-side logic; otherwise continue using existing backend and connect to the provider Postgres.
-- Backups & migrations: rely on the platform's managed backups initially; use Prisma migrations or provider SQL scripts in CI to apply schema changes deterministically.
+
+- Armazenar segredos sensíveis em variáveis de ambiente e não expor chaves de serviço no frontend.
+- Para backups e migrações, preferir uso de migrations automatizadas (`prisma migrate deploy`) em CI e políticas de backup do provedor.
+
+ Justificativa vinculada ao semestre
+ ----------------------------------
+
+ Escolhemos BaaS/serviços gerenciados para reduzir esforço operacional e permitir foco nas features do MVP durante o prazo do semestre.
+

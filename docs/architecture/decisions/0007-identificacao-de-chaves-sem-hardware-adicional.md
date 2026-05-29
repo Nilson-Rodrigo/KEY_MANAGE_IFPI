@@ -1,9 +1,12 @@
 # ADR 0007 — Identificação de Chaves e Ausência de Hardware Adicional
 
-**Status:** Accepted  
+**Status:** Aceito  
 **Data:** 2026-05-28  
 **Time:** CoreTech  
 **Projeto:** Sistema de Gerenciamento de Acesso a Chaves — IFPI Campus Piripiri
+
+**Autor:** CoreTech  
+**ID:** ADR 0007-ID
 
 ---
 
@@ -27,8 +30,23 @@ O quadro virtual de chaves (RF02, RF03) exibirá cada chave pelo seu código exi
 
 ## Consequências
 
-- **Custo zero de hardware:** nenhuma etiqueta, tag ou leitor adicional precisa ser adquirido ou instalado. O sistema é compatível com o inventário físico existente sem modificações.
-- O cadastro inicial das chaves no sistema (lista de códigos e descrições) precisará ser realizado **uma única vez** antes do deploy. Este cadastro deverá ser confirmado na entrevista final com o guarda e a gestão (pendência documentada na Seção 11.2 do DR: quantas chaves existem e qual o padrão exato em uso).
-- **QR Code foi descartado do MVP** por criar dependência de hardware (etiquetas) e adicionar complexidade de implementação (permissão de câmera, biblioteca de leitura QR) sem benefício proporcional — dado que o guarda já conhece os códigos existentes.
-- Caso o campus expanda o sistema para múltiplos campi ou precise de identificação automática sem digitação (ex.: autoatendimento por professores), a adoção de QR Code ou NFC poderá ser documentada em uma ADR de pós-MVP.
-- O padrão de código deve ser tratado como **imutável durante o MVP**: renomear chaves após o cadastro exigiria migração de dados no SQLite local de todos os dispositivos.
+### Positivas
+- Custo zero de hardware: nenhuma etiqueta, tag ou leitor adicional precisa ser adquirido ou instalado.
+- Compatibilidade imediata com o inventário físico existente, reduzindo barreira de adoção.
+
+### Negativas / Trade-offs
+- Requer cadastro inicial manual das chaves (lista de códigos) antes do deploy.
+- Padrão de código imutável no MVP: renomear chaves exige migração de dados local nos dispositivos SQLite.
+
+### Mitigações
+- Validar e coletar a lista de códigos na entrevista final com o guarda (Seção 11.2 do DR) e automatizar importação via CSV/JSON para reduzir esforço manual.
+- Documentar processo de migração de códigos e estabelecer procedimento administrativo para alterações pós‑MVP.
+
+## Critérios de aceitação
+
+- Cadastro inicial de chaves realizado e validado com os guardas (lista de códigos carregada no sistema).
+- Exibição do quadro de chaves mostra status corretos (disponível/em uso) e seleção funciona sem necessidade de hardware adicional.
+
+## Justificativa vinculada ao semestre
+
+Optamos por não introduzir hardware adicional para reduzir custos e acelerar o processo de implantação durante o semestre; a solução adere ao princípio KISS e facilita entrega dentro do cronograma.

@@ -1,26 +1,60 @@
 
 # ADR 0004 — Estratégia de Autenticação
 
-- **Status:** Accepted
+- **Status:** Aceito
 - **Data:** 2026-05-28
+- **Autor:** CoreTech
+- **ID:** ADR 0004
 
-Context
+Contexto
 -------
-Autenticação e autorização são áreas críticas de segurança. Implementar um sistema customizado exige tempo, expertise e responsabilidade contínua (rotinas de segurança, rotação de chaves, monitoramento). Para o MVP precisamos de uma solução segura que minimize esforço operacional.
+Autenticação e autorização são áreas críticas de segurança e frequentemente exigem atenção operacional contínua (gestão de senhas, hashing, recuperação, MFA, monitoramento). O prazo do MVP e a composição da equipe sugerem priorizar segurança e velocidade de entrega.
 
-Decision
+
+Alternativas consideradas:
+
+- Solução gerenciada (Serviço de Identidade - IdaaS): Firebase Auth, Auth0 — prós: integração rápida, segurança delegada; contras: custo e lock-in parcial.
+- Solução customizada: JWT com armazenamento próprio de credenciais — prós: controle total; contras: maior esforço e risco de implementação insegura.
+
+Decisão
 --------
-Adotamos o serviço de autenticação da plataforma BaaS como solução de autenticação para o MVP. O backend validará tokens JWT/Session gerados pelo provedor e aplicará autorização baseada em claims/roles conforme necessário. Usuários poderão ser sincronizados localmente quando vinculados a domínios de negócio.
+Adotamos **Identity-as-a-Service (IdaaS)** como estratégia de autenticação para o MVP, integrando via tokens JWT/Session emitidos pelo provedor e validando-os no backend.
 
-Consequences
+Justificativa resumida: reduz trabalho operacional e risco de implementar mecanismos inseguros; permite focar nas regras de negócio do MVP durante o semestre.
+
+Consequências
 ------------
-- O backend precisa validar tokens/claims emitidos pelo Supabase e aplicar políticas de autorização.
-- Dependeremos do Supabase para fluxos de autenticação (login, reset de senha, verificação de e-mail), reduzindo esforço operacional.
-- Caso no futuro se opte por migrar para outro provedor, documentaremos o plano de migração em uma ADR de follow-up.
 
-Implementation notes
+- Positivas:
+	- Integração rápida com SDKs e fluxos prontos (login, reset de senha, verificação de e-mail).
+	- Menor surface de segurança para o time (hashing, MFA, verificação de tokens são gerenciados).
+
+- Negativas / Trade-offs:
+	- Dependência e possível vendor lock-in; migração futura exigirá planejamento.
+	- Custos operacionais no ambiente de produção dependendo do provedor.
+
+Mitigações
+---------
+
+- Encapsular integrações com o provedor em `adapters/auth/` para facilitar troca futura.
+- Manter tabela `profiles` em Postgres para atributos de domínio ligados ao `user_id` do provedor.
+- Documentar processo de exportação/importação de usuários e requisitos para migração.
+
+Critérios de aceitação
+----------------------
+
+- Autenticação funcional no ambiente de desenvolvimento com um provedor gerenciado (ex.: Railway, Neon) e exemplos documentados em `docs/`.
+- Endpoints críticos protegidos e validados por middleware de verificação de token.
+
+Notas de implementação
 --------------------
-- Environment variables: store provider-specific variables such as `PROVIDER_URL`, `PROVIDER_ANON_KEY` (frontend) and `PROVIDER_SERVICE_ROLE_KEY` (server-only) as secrets.
-- Token validation: for server-side verification use the provider SDK or verify JWTs using the provider's JWKS endpoint. For sensitive operations prefer server-side checks using the service role key.
-- User data: keep a `profiles` table (or equivalent) in Postgres to store domain-related user attributes; rely on the provider's Auth for authentication and link to `profiles` via `user_id`.
-- Row-Level Security (RLS): when using the provider Postgres consider RLS policies for fine-grained DB access; document policies and test thoroughly.
+
+- Armazenar segredos em variáveis de ambiente: `PROVIDER_URL`, `PROVIDER_ANON_KEY`, `PROVIDER_SERVICE_ROLE_KEY`.
+- Para operações sensíveis, utilizar verificação server-side com a chave de serviço do provedor.
+- Considerar Row-Level Security (RLS) no Postgres quando aplicável e documentar as políticas.
+
+Justificativa vinculada ao semestre
+----------------------------------
+
+Escolhemos IdAaS para reduzir tempo de implementação e risco de falhas de segurança, priorizando entrega do MVP dentro do semestre.
+

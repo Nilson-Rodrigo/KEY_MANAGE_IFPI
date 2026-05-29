@@ -1,10 +1,13 @@
 
 # ADR 0008 — Arquitetura Macro: Monolito Modular + Clean Architecture + Vertical Slices + MVVM
 
-- **Status:** Accepted
+- **Status:** Aceito
 - **Data:** 2026-05-28
 - **Time:** CoreTech
 - **Projeto:** Sistema de Gerenciamento de Acesso a Chaves — IFPI Campus Piripiri
+
+- **Autor:** CoreTech
+- **ID:** ADR 0008
 
 ---
 
@@ -27,59 +30,42 @@ Essa combinação visa preservar simplicidade operacional (um único deploy e ba
 
 ## Consequências
 
-- Benefícios:
-  - Reduz complexidade operacional (um único processo/DB), adequado ao contexto do campus.
-  - Facilita extração futura de módulos (quando houver maturidade/necessidade) porque as fronteiras internas serão explícitas.
-  - Clean Architecture protege regras de negócio de mudanças em infraestrutura (DB, auth, storage), facilitando testes de unidade e integração.
-  - Vertical Slices acelera entregas por permitir que uma feature seja desenvolvida de ponta a ponta com menos coordenação entre desenvolvedores.
-  - MVVM favorece testabilidade e reatividade no cliente mobile.
+### Positivas
+- Reduz complexidade operacional (um único processo/DB), adequado ao contexto do campus.
+- Facilita extração futura de módulos porque as fronteiras internas serão explícitas.
+- Clean Architecture protege regras de negócio de mudanças em infraestrutura, facilitando testes de unidade e integração.
+- Vertical Slices acelera entregas por permitir que uma feature seja desenvolvida de ponta a ponta com menos coordenação entre desenvolvedores.
+- MVVM favorece testabilidade e reatividade no cliente mobile.
 
-- Custos / limitações:
-  - Requer disciplina para manter boundaries claros entre módulos; sem disciplina o monolito pode degenerar em código com acoplamento.
-  - Extração para microsserviços no futuro exige trabalho, mas será mais simples com fronteiras bem definidas.
+### Negativas / Trade-offs
+- Requer disciplina para manter boundaries claros entre módulos; sem disciplina o monolito pode degenerar em código com alto acoplamento.
+- Extração para microsserviços no futuro exige trabalho adicional, embora facilitada por fronteiras claras.
 
-## Orientações práticas de implementação (não quebrar o código)
+### Mitigações
+- Definir e documentar critérios de boundary (responsabilidade única, interface pública mínima, dependências via ports/adapters).
+- Scaffold inicial e exemplos em `feature/arquitetura` para orientar implementação consistente.
+- PR template e checklist para garantir que mudanças respeitem as fronteiras (testes, interfaces, migrations).
 
-1. **Comece incrementalmente** — não faça reescrita total. Identifique uma feature pouco acoplada (ex.: gestão de chaves) para prova de conceito de modularização.
+## Critérios de aceitação
 
-2. **Introduza Ports & Adapters:** crie interfaces (ports) para interações com infraestrutura (persistência, filas, auth, storage). As implementações concretas (adapters) ficam em `adapters/` ou dentro de cada feature quando apropriado.
-
-3. **Estrutura inicial recomendada:**
-
-```
-src/
-  core/                # Núcleo: entidades, casos de uso, interfaces (ports)
-  features/
-    auth/
-    chaves/
-    sincronizacao/
-  adapters/            # Implementações de infra (db, storage, email, etc.)
-  presentation/        # Camada de UI (React Native) com ViewModels (MVVM)
-  shared/              # Utilitários e tipos compartilhados
-```
-
-4. **Strangler Pattern:** quando extrair uma funcionalidade, mantenha o contrato existente (API/DB) e redirecione chamadas gradualmente para a nova implementação. Use feature flags se necessário.
-
-5. **Banco de dados e migrações:** planeje mudanças de schema compatíveis com deploys incrementais (colunas novas com valores default, backfills, leitura dupla quando necessário). Versione migrations e execute no CI antes do deploy.
-
-6. **Testes:** aumente cobertura em pontos críticos (sincronização, operações de retirada/devolução). Priorize testes de integração que simulam ciclos offline→sync.
-
-7. **Documentação e ADRs:** registre decisões de fronteira e contratos em ADRs adicionais sempre que mudar boundaries significativas.
-
-8. **Critérios de boundary entre módulos:** cada módulo deve possuir:
-   - responsabilidade única bem definida (ex.: gestão de chaves não faz lógica de autenticação);
-   - interface pública mínima documentada (input/output);
-   - dependências externas acessadas via ports/adapters.
+- Estrutura de pastas `src/core`, `src/features/*`, `src/adapters`, `src/presentation` criada e referenciada na documentação.
+- Exemplo mínimo de `port` e `adapter` implementado para `sincronizacao` e `chaves`.
+- POC da sincronização integrado ao scaffold com testes end‑to‑end demonstrando ciclo offline→sync.
 
 ## Plano imediato de ação (sprint 0 / spike)
 
-- Criar ADR 0008 (este documento) e referenciá-la nas ADRs 0002, 0003 e 0006.
-- Implementar scaffold em branch `feature/arquitetura`: pastas `src/core`, `src/features/*`, `src/adapters`, `src/presentation` e exemplos de interfaces (ports) e um `ViewModel` simples.
-- Implementar POC de sincronização movendo a `sincronizacao` para a nova estrutura e guardar testes end-to-end.
+- Criar branch `feature/arquitetura` com scaffold e exemplos de ports/adapters.
+- Implementar POC de sincronização na nova estrutura e publicar instruções de execução no README de `src/`.
+- Registrar ADRs adicionais para fronteiras significativas que surgirem durante a implementação.
+
+Justificativa vinculada ao semestre
+----------------------------------
+
+Esta combinação arquitetural entrega baixo custo operacional e alta velocidade de desenvolvimento, adequada às limitações de tempo e recursos do semestre; favorece entregas incrementais e mitigação de riscos técnicos durante o POC.
 
 ## Consequências de longo prazo
 
-- Facilita futuras extrações e testes; reduz custo de manutenção ao longo do tempo.
+- Facilita futuras extrações e testes; reduz custo de manutenção ao longo do tempo se as fronteiras forem respeitadas.
 - A qualidade do código no final do MVP dependerá da disciplina do time em respeitar boundaries e padrões acordados.
 
 ---

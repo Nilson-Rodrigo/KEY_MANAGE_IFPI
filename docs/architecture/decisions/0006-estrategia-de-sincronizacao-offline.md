@@ -1,7 +1,9 @@
 # ADR 0006 — Estratégia de Sincronização Offline
 
-**Status:** Accepted  
+**Status:** Aceito  
 **Data:** 2026-05-28  
+**Autor:** CoreTech  
+**ID:** ADR 0006
 **Time:** CoreTech  
 **Projeto:** Sistema de Gerenciamento de Acesso a Chaves — IFPI Campus Piripiri
 
@@ -35,8 +37,26 @@ A viabilidade desta estratégia será validada no **spike técnico das Semanas 1
 
 ## Consequências
 
-- A estratégia LWW é uma **simplificação aceita para o MVP**, documentada como limitação conhecida em RNF06 e RN07 do Documento de Requisitos.
-- O módulo de sincronização (US-09) é a história tecnicamente mais complexa do MVP, envolvendo: detecção de conectividade em tempo real (NetInfo), fila de sincronização local (SQLite com campo de status), resolução de conflitos por timestamp, transparência ao usuário via indicador visual (US-10) e resiliência a falhas parciais.
-- A limitação mais crítica deve ser **explicitada no POC** da Semana 1–2: em cenários de múltiplos dispositivos offline simultâneos, registros mais antigos podem ser sobrescritos sem alerta visível ao guarda.
-- Para o contexto atual do campus (operação com 1–2 dispositivos no máximo), o risco real de conflito é baixo. A limitação se torna relevante apenas se o sistema for expandido para múltiplos postos simultâneos (pós-MVP).
-- O log de auditoria de conflitos (UC_LOG no diagrama UC04) é obrigatório para que a limitação seja gerenciável sem intervenção no código.
+### Positivas
+- Estratégia simples e implementável dentro do prazo do semestre (POC nas Semanas 1–2).
+- Permite sincronização automática sem depender de intervenção humana, preservando fluxo operacional do guarda.
+- Log de auditoria garante rastreabilidade de eventos sobrescritos para revisão posterior.
+
+### Negativas / Trade-offs
+- Risco de perda silenciosa de dados em conflitos concorrentes entre múltiplos dispositivos offline (limitação da regra "último timestamp vence").
+- Pode não ser adequada para cenários com muitos dispositivos offline simultâneos (pós‑MVP) sem aprimoramento da estratégia.
+
+### Mitigações
+- Validar via POC (Semanas 1–2) a ocorrência prática de conflitos e impacto na operação.
+- Implementar log de auditoria de eventos sobrescritos e ferramenta de revisão administrativa para consultas posteriores.
+- Plano de contingência: sincronização manual iniciada por administrador caso o POC demonstre risco inaceitável.
+
+## Critérios de aceitação
+
+- Endpoint de sincronização aceita lotes com `event_id` único e retorna status por evento (aplicado/ignorado/erro).
+- Testes de integração demonstram reenvio seguro de eventos (idempotência) e aplicação da regra por timestamp.
+- POC documentado com cenário de conflito e justificativa técnica para manter ou alterar a estratégia.
+
+## Justificativa vinculada ao semestre
+
+Optamos por LWW como trade‑off pragmático para entregar MVP funcional dentro do prazo acadêmico, com mitigação via POC e logs de auditoria para minimizar impacto operacional.

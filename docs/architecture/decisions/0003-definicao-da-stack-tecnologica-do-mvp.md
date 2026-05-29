@@ -1,32 +1,69 @@
 
+
 # ADR 0003 — Definição da Stack Tecnológica do MVP
 
-- **Status:** Accepted
+- **Status:** Aceito
 - **Data:** 2026-05-28
+- **Autor:** CoreTech
+- **ID:** ADR 0003
 
-Context
+Contexto
 -------
-Definir o conjunto de linguagens, frameworks e paradigmas de banco de dados para o MVP é uma decisão de impacto no tempo de entrega, qualidade e facilidade de manutenção. O repositório atual já contém um backend em TypeScript, portanto é natural alinhar decisões com essa base.
+O time precisa escolher uma stack que maximize velocidade de entrega, mantenha qualidade suficiente para avaliação do MVP e minimize risco técnico dada a capacidade da equipe (prazos do semestre, conhecimento prévio em JavaScript/TypeScript).
 
-Decision
+
+Alternativas consideradas:
+
+- Manter JavaScript/TypeScript no backend (Node.js) + PostgreSQL relacional.
+- Migrar para soluções NoSQL (MongoDB) para flexibilidade de schema.
+- Usar uma solução BaaS (serviços gerenciados) para acelerar infra vs. provisionar infraestrutura própria (Heroku, Docker em cloud).
+
+Decisão
 --------
-Para o MVP adotamos a seguinte stack macro:
+Adotamos a seguinte stack para o MVP, conforme Relatório de Viabilidade (RVS):
 
-- Backend: Node.js com TypeScript, utilizando um framework leve como Fastify.
-- Frontend: React com Vite.
-- Banco de Dados: PostgreSQL (relacional).
--- Plataforma BaaS recomendada: plataforma BaaS gerenciada (fornece Postgres gerenciado, autenticação e storage integrados), adotada para acelerar o MVP.
+- Frontend (mobile): **React Native + Expo** — app mobile offline‑first para uso no celular dos guardas.
+- Backend/API: **Node.js + TypeScript + Express** — API REST leve e compatível com o ambiente de TI do campus.
+- Armazenamento local (dispositivo): **SQLite** (persistência offline no app).
+- Armazenamento servidor: **PostgreSQL** (banco relacional centralizado no servidor do campus).
+- Sincronização: estratégia offline com fila local (SQLite) e sincronização automática ao reconectar — regra de conflito: **"último timestamp vence"** (limitação documentada).
 
-Consequences
+Justificativa resumida: o RVS define claramente `React Native + Expo` e `SQLite` para offline no cliente, e `Node.js + Express` com `PostgreSQL` no servidor; essa configuração maximiza compatibilidade com a infraestrutura do campus e atende às necessidades de operação offline do MVP.
+
+Consequências
 ------------
--- Operações que exigem consistência e modelo relacional serão implementadas com constraints e transações no PostgreSQL (via a plataforma BaaS/Postgres).
-- Integração com ORMs modernos (ex: Prisma) e ferramentas de validação em TypeScript (Zod) favorecerão produtividade.
-- Para necessidades específicas (ex.: pesquisa full-text, workloads massivos), projetos complementares poderão ser avaliados em ADRs futuras.
 
-Implementation notes
---------------------
--- Environment variables: set provider-specific variables such as `PROVIDER_URL`, `PROVIDER_ANON_KEY` (client), `PROVIDER_SERVICE_ROLE_KEY` (server-only) and `DATABASE_URL` (Postgres connection string fornecida pela plataforma BaaS) in CI/CD and runtime secrets.
--- Recommended packages (backend): SDK do provedor BaaS, `@prisma/client`, `prisma`, `zod`.
--- Prisma can be used against the provider Postgres by setting `DATABASE_URL` to the provider's connection string (prefer using a dedicated DB user/role where possible).
--- Use the platform BaaS dashboard to manage migrations during early MVP stages or drive migrations from Prisma (`prisma migrate deploy`) in CI.
+
+Positivas:
+- Atende aos requisitos identificados no RVS: operação offline, compatibilidade com dispositivos móveis e infraestrutura interna (PostgreSQL).
+- Facilita integração com o servidor do campus já gerenciado internamente pelo técnico de TI.
+
+Negativas / Trade-offs:
+- Curva de aprendizado com React Native/Expo para alguns membros da equipe (mitigar com spike técnico nas Semanas 1–2).
+- A estratégia de sincronização (`último timestamp vence`) pode causar perdas silenciosas em conflitos concorrentes entre dispositivos offline.
+
+Mitigações
+---------
+- Executar spike técnico (POC) nas Semanas 1–2 focado em SQLite + sincronização para validar viabilidade.
+- Documentar a limitação de conflito e fornecer plano de contingência (sincronização manual pelo administrador) caso o POC aponte risco excessivo.
+- Encapsular acesso a banco e mecanismos de sincronização em adaptadores (`adapters/`) para permitir mudanças futuras sem afetar o core.
+
+Criterios de aceitação
+----------------------
+
+- Frontend: projeto React Native + Expo inicializado com telas mínimas (login e quadro de chaves) e integração com SQLite local.
+- Backend: projeto Node.js + TypeScript + Express com endpoints para sincronização e persistência em PostgreSQL; `DATABASE_URL` configurável via `.env.example`.
+- POC de sincronização aprovado: envio de registros do SQLite para o servidor e aplicação da regra `último timestamp vence` demonstrada em ambiente de teste.
+- Documentação curta no `docs/architecture/decisions/0003-*` descrevendo fluxo de sincronização, limitações e plano de contingência.
+
+Notas operacionais
+-----------------
+
+- Pacotes/choices iniciais recomendados: `expo` (cliente), `react-native-sqlite-storage` ou `expo-sqlite` (local), `express`, `pg`/`node-postgres` (server). O uso de `Prisma` é opcional — pode agilizar desenvolvimento TypeScript, mas `node-postgres` puro mantém menor camada de abstração se preferido.
+- Evitar soluções BaaS obrigatórias; Railway/Neon podem ser opções de contingência caso o servidor do campus não esteja disponível.
+
+Justificativa vinculada ao semestre
+----------------------------------
+
+Esta stack prioriza produtividade com ferramentas familiares à equipe (TypeScript + Prisma) e reduz esforço de infraestrutura durante o semestre, alinhando-se às restrições de tempo e conhecimento do grupo.
 
