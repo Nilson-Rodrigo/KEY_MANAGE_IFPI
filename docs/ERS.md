@@ -18,7 +18,6 @@
 * Eric Vinicius — UX/UI
 * Roger Pierre — Desenvolvedor Full Stack
 * Nilson Rodrigo — Desenvolvedor Full Stack
-* Deric Rodrigues — Desenvolvedor Full Stack
 
 ---
 

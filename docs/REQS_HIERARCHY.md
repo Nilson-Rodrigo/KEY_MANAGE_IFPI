@@ -12,7 +12,7 @@
 | Product Owner          | Antonio Carlos                                 |
 | Analista de Requisitos | Ana Rosa Pereira Chaves                        |
 | UX/UI                  | Eric Vinicius                                  |
-| Desenvolvedores        | Roger Pierre e Nilson Rodrigo  |
+| Desenvolvedores        | Roger Pierre e Nilson Rodrigo                  |
 
 ---
 
