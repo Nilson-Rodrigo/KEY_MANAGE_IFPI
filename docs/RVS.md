@@ -21,6 +21,8 @@
 
 ---
 
+> **Nota de atualização (14/07/2026):** este documento reflete a análise de viabilidade original, concluída em Abril de 2026. Em 14/07/2026 a equipe migrou a persistência de PostgreSQL para Firebase (Firestore). Ver `docs/ADENDO_MIGRACAO_FIREBASE.md` e as ADRs 0010–0013 para o detalhamento técnico completo desta mudança.
+
 ## 1. Contexto e Problema Identificado
 
 O controle de chaves de salas e laboratórios do IFPI Campus Piripiri é realizado manualmente. Professores e servidores assinam um caderno na guarita ao retirar as chaves e, durante a troca de turno, os guardas transcrevem manualmente as chaves ainda não devolvidas para outro caderno.
