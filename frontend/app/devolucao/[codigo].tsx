@@ -47,7 +47,7 @@ export default function DevolucaoScreen(): React.ReactNode {
       }
 
       Alert.alert("Sucesso", "Devolução registrada com sucesso.", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: (): void => router.back() },
       ]);
     } catch {
       Alert.alert("Erro", "Não foi possível registrar a devolução.");
