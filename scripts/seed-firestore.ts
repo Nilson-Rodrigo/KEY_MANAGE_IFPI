@@ -29,25 +29,16 @@ if (USE_EMULATOR) {
   });
 }
 
-const guardas = [
-  { nome: "Carlos", matricula: "2024000001", ativo: true },
-  { nome: "Ana", matricula: "2024000002", ativo: true },
-  { nome: "João", matricula: "2024000003", ativo: true },
-];
-
 const chaves = [
   { codigo: "A/S1", status: "disponivel", responsavelAtual: null, ultimaMovimentacaoEm: null },
   { codigo: "A/S2", status: "em_uso", responsavelAtual: { nome: "Carlos", matricula: "2024000001" }, ultimaMovimentacaoEm: new Date().toISOString() },
   { codigo: "A/S3", status: "disponivel", responsavelAtual: null, ultimaMovimentacaoEm: null },
+  { codigo: "A/S4", status: "disponivel", responsavelAtual: null, ultimaMovimentacaoEm: null },
+  { codigo: "A/S5", status: "em_uso", responsavelAtual: { nome: "Ana", matricula: "2024000002" }, ultimaMovimentacaoEm: new Date().toISOString() },
 ];
 
 async function seed() {
-  console.log("Populando Firestore emulado...");
-
-  for (const guarda of guardas) {
-    await db.collection("guardas").doc(guarda.matricula).set(guarda);
-    console.log("Guarda cadastrado:", guarda.nome, guarda.matricula);
-  }
+  console.log("Populando Firestore emulado com chaves...");
 
   for (const chave of chaves) {
     await db.collection("chaves").doc(chave.codigo).set(chave);
