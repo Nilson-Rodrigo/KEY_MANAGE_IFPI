@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import { ChaveSchema, CodigoChaveSchema } from "../../../src/specs/schemas/chaves.schema";
-import { API_BASE_URL } from "../../../constants";
+import { ChaveSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
+import { API_BASE_URL } from "../../constants";
 
 type Chave = {
   codigo: string;
