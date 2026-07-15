@@ -50,4 +50,4 @@ jobs:
 
       - name: Lint do frontend
         working-directory: frontend
-        run: npm run lint
+        run: npx eslint . --ext .ts --config eslint.config.js
