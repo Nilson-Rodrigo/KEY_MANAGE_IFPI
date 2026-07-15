@@ -4,6 +4,7 @@ Este diretório reúne as entregas e artefatos solicitados pelo professor e pela
 - `TEAM.md` — Cadastro do time, nome da equipe, visão do produto e público‑alvo.
 - `RVS.md` — Relatório de Viabilidade de Software (resumo executivo e conclusões).
 - `ERS.md` — Especificação de Requisitos do Software (requisitos funcionais e não‑funcionais).
+- `ADENDO_MIGRACAO_FIREBASE.md` — Adendo (14/07/2026) que registra a migração de PostgreSQL para Firebase sem alterar o RVS/ERS originais.
 - `REQS_HIERARCHY.md` — Hierarquia de requisitos: épicos → histórias → tarefas.
 - `PROTOTYPE.md` — Prototipação e links para wireframes/protótipos.
 - `STATUS_REPORT_1.md` — Relatório de status da primeira entrega/sprint.
