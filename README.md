@@ -137,16 +137,15 @@ A API estará disponível em `http://localhost:3001/v1`.
 ```bash
 cd frontend
 
-# Windows — use o script preparado
-start.bat
+# Opcao 1 — Web (navegador, sem Expo Go)
+start-web.bat
 
-# macOS/Linux
-export TEMP="$HOME/.cache"
-export TMP="$HOME/.cache"
-npx expo start
+# Opcao 2 — Mobile com Expo Go
+start.bat
 ```
 
-Escaneie o QR code com o **Expo Go** (Android/iOS). O app consome a API em `http://<SEU_IP>:3001/v1`.
+A versao web abre automaticamente em `http://localhost:8081` no navegador.
+A versao mobile gera um QR code para escanear com o **Expo Go**.
 
 ### Apenas o servidor API
 ```bash
