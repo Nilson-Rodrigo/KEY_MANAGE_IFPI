@@ -32,3 +32,9 @@ jobs:
 
       - name: Harness completo
         run: npm run verify
+
+      - name: Frontend smoke check
+        working-directory: frontend
+        run: |
+          npm ci --legacy-peer-deps
+          node node_modules/expo/bin/cli start --help
