@@ -126,8 +126,23 @@ cp .env.example .env
 # 4. Login no Firebase
 firebase login
 firebase use --add
+```
 
-# 5. Iniciar API local
+#### Opção A — Emulador Firebase (recomendado para desenvolvimento)
+```bash
+# Terminal 1: iniciar emulador do Firestore
+firebase emulators:start --only firestore
+
+# Terminal 2: iniciar API apontando para o emulador
+npm run dev:local
+
+# Terminal 3: popular banco com dados de teste
+npm run seed
+```
+
+#### Opção B — Firebase em nuvem
+```bash
+# Iniciar API conectada ao projeto Firebase real
 npm run dev
 ```
 
@@ -137,15 +152,15 @@ A API estará disponível em `http://localhost:3001/v1`.
 ```bash
 cd frontend
 
-# Opcao 1 — Web (navegador, sem Expo Go)
-start-web.bat
-
-# Opcao 2 — Mobile com Expo Go
+# Opcao 1 — Mobile com Expo Go
 start.bat
+
+# Opcao 2 — Web (navegador, sem Expo Go)
+start-web.bat
 ```
 
-A versao web abre automaticamente em `http://localhost:8081` no navegador.
 A versao mobile gera um QR code para escanear com o **Expo Go**.
+A versao web abre em `http://localhost:8081`.
 
 ### Apenas o servidor API
 ```bash
