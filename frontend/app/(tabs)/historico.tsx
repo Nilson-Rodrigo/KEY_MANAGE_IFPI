@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { MovimentacaoSchema, CodigoChaveSchema } from "../../../src/specs/schemas/chaves.schema";
@@ -32,7 +32,7 @@ export default function HistoricoScreen() {
     }
   };
 
-  useState(() => {
+  useEffect(() => {
     carregarHistorico();
   }, []);
 
