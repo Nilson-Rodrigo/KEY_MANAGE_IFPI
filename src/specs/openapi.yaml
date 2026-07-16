@@ -12,9 +12,9 @@ info:
     name: CoreTech — Engenharia de Software II — IFPI Campus Piripiri
 
 servers:
-  - url: https://api.coretech-chaves.example.com/v1
-    description: Servidor central (produção — Railway, ver ADR-0005)
-  - url: http://localhost:3000/v1
+  - url: https://coretech-chaves-api.onrender.com/v1
+    description: Servidor central (produção — Render)
+  - url: http://localhost:3001/v1
     description: Ambiente local de desenvolvimento
 
 tags:
