@@ -3,7 +3,7 @@ import { router } from "expo-router";
 
 export default function IndexRedirect(): null {
   useEffect(() => {
-    router.replace("/identificacao");
+    router.replace("/(tabs)/quadro");
   }, []);
 
   return null;
