@@ -22,8 +22,7 @@ export default function HistoricoScreen(): React.ReactNode {
   const carregarHistorico = async (): Promise<void> => {
     try {
       const data = await api.buscarHistorico("A/S9");
-      const movimentacoesValidadas = data.map((item: unknown) => MovimentacaoSchema.parse(item));
-      setMovimentacoes(movimentacoesValidadas);
+      setMovimentacoes(data);
     } catch (error) {
       console.error("Erro ao carregar histórico:", error);
       Alert.alert("Histórico", "Não foi possível carregar o histórico no momento.");
