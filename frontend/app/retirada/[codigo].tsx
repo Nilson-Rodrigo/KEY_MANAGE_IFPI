@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { RegistroMovimentacaoRequestSchema, CodigoChaveSchema } from "../../../src/specs/schemas/chaves.schema";
-import { API_BASE_URL } from "../../../constants";
+import { RegistroMovimentacaoRequestSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
+import { API_BASE_URL } from "../../constants";
 
 type FormData = {
   responsavelNome: string;

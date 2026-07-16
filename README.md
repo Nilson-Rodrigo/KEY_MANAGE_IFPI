@@ -107,37 +107,45 @@ firebase use --add
 
 ## Executando o Projeto
 
+### Pré-requisitos
+- Node.js 20+
+- Conta no Firebase com projeto `coretech-chaves`
+- Conta no Render (ou Railway) para deploy do backend
+- Expo CLI instalado globalmente
+
 ### Backend — API + Firebase
+
+#### Desenvolvimento local com emulador
 ```bash
-# 1. Clonar o repositório
-git clone https://github.com/CoreTech-IFPI/coretech-chaves.git
-cd coretech-chaves
+# Terminal 1: iniciar emulador do Firestore
+firebase emulators:start --only firestore
 
-# 2. Instalar dependencias
-npm install
+# Terminal 2: popular banco com dados de teste
+npm run seed
 
-# 3. Configurar variaveis de ambiente
-cp .env.example .env
-# Editar .env com as credenciais do Firebase:
-# FIREBASE_PROJECT_ID=coretech-chaves
-# FIREBASE_CLIENT_EMAIL=...
-# FIREBASE_PRIVATE_KEY=...
-
-# 4. Login no Firebase
-firebase login
-firebase use --add
-
-# 5. Iniciar API local
+# Terminal 3: iniciar API
 npm run dev
 ```
 
-A API estará disponível em `http://localhost:3001/v1`.
+#### Deploy em produção (Render)
+1. Acesse https://dashboard.render.com
+2. Clique em **New +** → **Blueprint**
+3. Conecte o repositório `WesleyTiagg/KEY_MANAGE_IFPI`
+4. Configure as variáveis de ambiente:
+   - `FIREBASE_PROJECT_ID` = `coretech-chaves`
+   - `FIREBASE_CLIENT_EMAIL` = `firebase-adminsdk-fbsvc@coretech-chaves.iam.gserviceaccount.com`
+   - `FIREBASE_PRIVATE_KEY` = sua private key do Firebase
+5. Clique em **Apply** e aguarde o deploy
+
+A API em produção ficará disponível em `https://coretech-chaves-api.onrender.com/v1`.
 
 ### Frontend — App Expo (mobile)
+
+#### Desenvolvimento local
 ```bash
 cd frontend
 
-# Windows — use o script preparado
+# Windows
 start.bat
 
 # macOS/Linux
@@ -146,7 +154,25 @@ export TMP="$HOME/.cache"
 npx expo start
 ```
 
-Escaneie o QR code com o **Expo Go** (Android/iOS). O app consome a API em `http://<SEU_IP>:3001/v1`.
+#### Build de produção (EAS Build)
+```bash
+cd frontend
+npx eas build --platform android --profile preview
+```
+
+O APK gerado pode ser instalado diretamente em qualquer dispositivo Android.
+
+#### Configuração da URL da API
+Para desenvolvimento local, defina a variável de ambiente:
+```bash
+# Windows (PowerShell)
+$env:EXPO_PUBLIC_API_URL="http://192.168.0.2:3001"
+
+# macOS/Linux
+export EXPO_PUBLIC_API_URL="http://192.168.0.2:3001"
+```
+
+Para produção, edite `frontend/constants.ts` e substitua pela URL pública do Render.
 
 ### Apenas o servidor API
 ```bash
@@ -157,6 +183,27 @@ npm run dev
 ```bash
 npm run build
 npm start
+```
+start-web.bat
+```
+
+O app consome a API pela variável `EXPO_PUBLIC_API_URL`.
+
+### Apenas o servidor API
+```bash
+npm run dev
+```
+
+### Build para produção
+```bash
+npm run build
+npm start
+```
+
+### Build do APK com EAS Build
+```bash
+cd frontend
+npx eas build --platform android --profile preview
 ```
 
 ## Executando o Harness (Verificação Automática)

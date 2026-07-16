@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { MovimentacaoSchema, CodigoChaveSchema } from "../../../src/specs/schemas/chaves.schema";
-import { API_BASE_URL } from "../../../constants";
+import { MovimentacaoSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
+import { API_BASE_URL } from "../../constants";
 
 type Movimentacao = {
   id: string;
