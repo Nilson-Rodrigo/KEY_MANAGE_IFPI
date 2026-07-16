@@ -51,7 +51,6 @@ export default function QuadroChavesScreen(): React.ReactNode {
       setChaves(chavesValidadas);
     } catch (error) {
       console.error("Erro ao carregar chaves:", error);
-      // Tenta carregar do cache mesmo assim
       const cached = await storage.buscarChavesCache();
       if (cached) {
         setChaves(cached as Chave[]);
@@ -162,7 +161,6 @@ export default function QuadroChavesScreen(): React.ReactNode {
     );
   };
 
-  // Exibe indicador de carregamento enquanto busca os dados
   if (carregando) {
     return (
       <View style={styles.center}>
@@ -174,7 +172,6 @@ export default function QuadroChavesScreen(): React.ReactNode {
 
   return (
     <View style={styles.container}>
-      {/* Banner exibido quando o aplicativo está offline */}
       {(offline || pendentes > 0) && (
         <View style={styles.offlineBanner}>
           <Text style={styles.offlineText}>

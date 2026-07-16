@@ -11,6 +11,7 @@
     "verify": "npm run lint && npm run typecheck",
     "verify:frontend": "npm --prefix frontend run verify && npm --prefix frontend run build",
     "verify:all": "npm run verify && npm run verify:frontend",
+    "rules:check": "firebase emulators:exec --only firestore \"tsx scripts/rules-smoke.ts\"",
     "emulators:start": "firebase emulators:start --only auth,firestore,hosting",
     "seed": "tsx scripts/seed-firestore.ts",
     "seed:prod": "tsx scripts/seed-prod.ts",

@@ -252,6 +252,28 @@ export const api = {
     }
   },
 
+  async cadastrarChave(codigo: string): Promise<Chave> {
+    const { db } = await bancoAutenticado();
+    const codigoNormalizado = codigo.trim().toUpperCase();
+    if (!/^[A-Z]+\/[A-Z0-9]+$/.test(codigoNormalizado)) {
+      throw criarErro("CODIGO_INVALIDO", "Código deve seguir o padrão Bloco/Sala, ex: A/S1", 400);
+    }
+    const chaveRef = doc(db, "chaves", encodeURIComponent(codigoNormalizado));
+    const existente = await getDoc(chaveRef);
+    if (existente.exists()) {
+      throw criarErro("CHAVE_JA_EXISTE", `A chave ${codigoNormalizado} já está cadastrada.`, 409);
+    }
+    const novaChave: Chave = {
+      codigo: codigoNormalizado,
+      status: "disponivel",
+      responsavelAtual: null,
+      ultimaMovimentacaoEm: null,
+    };
+    const { setDoc } = await import("firebase/firestore");
+    await setDoc(chaveRef, novaChave);
+    return novaChave;
+  },
+
   async buscarChave(codigo: string): Promise<Chave> {
     const { db } = await bancoAutenticado();
     const snapshot = await getDoc(await resolverChave(db, codigo));

@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 .firebase-cli-temp/
+.firebase-config/
 functions/lib/
 .firebase/
 frontend/.expo/
@@ -17,6 +18,7 @@ coverage/
 .env
 .env.local
 *.env.*
+!**/.env.example
 
 # Firebase Admin credentials (private)
 *firebase-adminsdk*.json

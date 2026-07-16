@@ -33,7 +33,7 @@ Firebase Hosting
 ## Consequências
 
 - **Positivas:** uma única plataforma operacional; menos infraestrutura; transações atômicas; regras próximas aos dados; suporte direto ao SDK web/mobile.
-- **Negativas:** Security Rules tornam-se parte crítica do domínio; o administrador inicial exige provisionamento seguro; mudanças de esquema exigem coordenação entre cliente e regras; operações offline conflitantes continuam sujeitas à política LWW aceita no MVP.
+- **Negativas:** Security Rules tornam-se parte crítica do domínio; o administrador inicial exige provisionamento seguro; mudanças de esquema exigem coordenação entre cliente e regras; operações offline conflitantes continuam sujeitas à política LWW aceita no MVP. Como o Firebase Auth por e-mail/senha permite autoinscrição no cliente, alguém pode ocupar antecipadamente um e-mail técnico e impedir o cadastro daquela matrícula, embora não consiga criar o perfil protegido nem acessar o Firestore. Eliminar também esse risco exigiria um ambiente confiável com Admin SDK, contrariando a restrição desta versão de não usar backend ou Functions.
 
 ## Critérios de aceitação
 

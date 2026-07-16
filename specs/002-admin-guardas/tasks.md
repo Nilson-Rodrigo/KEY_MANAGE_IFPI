@@ -12,5 +12,5 @@
 - [x] T010 Remover dependência de arquivo de credencial do bundle.
 - [x] T011 Documentar provisionamento inicial e configuração.
 - [x] T012 Adicionar testes de validação das credenciais.
-- [ ] T013 Executar lint, typecheck, testes, build e Expo Doctor.
-- [ ] T014 Validar a compilação das Security Rules no Emulator Suite.
+- [x] T013 Executar lint, typecheck, testes, build e Expo Doctor.
+- [x] T014 Validar a compilação das Security Rules no Emulator Suite.
