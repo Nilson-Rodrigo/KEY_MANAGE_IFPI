@@ -24,8 +24,8 @@ export default function HistoricoScreen(): React.ReactNode {
       const data = await api.buscarHistorico("A/S9");
       const movimentacoesValidadas = data.map((item: unknown) => MovimentacaoSchema.parse(item));
       setMovimentacoes(movimentacoesValidadas);
-    } catch {
-      // fallback silencioso para manter funcionamento offline
+    } catch (error) {
+      console.error("Erro ao carregar histórico:", error);
     } finally {
       setCarregando(false);
     }

@@ -20,7 +20,8 @@ export default function QuadroChavesScreen(): React.ReactNode {
     try {
       const chavesValidadas = await api.listarChaves().then(data => data.map((item: unknown) => ChaveSchema.parse(item)));
       setChaves(chavesValidadas);
-    } catch {
+    } catch (error) {
+      console.error("Erro ao carregar chaves:", error);
       Alert.alert("Erro", "Não foi possível carregar as chaves.");
     } finally {
       setCarregando(false);
