@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563eb"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,9 +18,10 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2563eb"
       },
-      "package": "com.coretech.chaves"
+      "package": "com.coretech.chaves",
+      "predictiveBackGestureEnabled": false
     },
     "web": {
       "bundler": "metro",
@@ -28,14 +29,17 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-font",
+      "expo-status-bar",
+      "expo-splash-screen"
     ],
     "scheme": "coretech-chaves",
     "extra": {
       "router": {},
       "eas": {
         "projectId": "9f856830-b495-468b-b259-a920f7864e80"
-      }
+      },
+      "API_BASE_URL": "https://coretech-chaves-api-hj3k.onrender.com"
     }
   }
 }
