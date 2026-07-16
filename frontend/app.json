@@ -10,11 +10,10 @@
       "bundleIdentifier": "com.coretech.chaves"
     },
     "android": {
-      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#2563eb"
       },
-      "package": "com.company.coretech",
+      "package": "com.coretech.chaves",
       "predictiveBackGestureEnabled": false
     },
     "web": {

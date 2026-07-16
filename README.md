@@ -6,7 +6,7 @@ Aplicativo Expo offline-first para controlar retirada e devolução de chaves do
 
 ```text
 Expo / React Native
-  ├─ Firebase Authentication anônima
+  ├─ Firebase Authentication por e-mail/senha
   ├─ Cloud Firestore (acesso direto, protegido por Security Rules)
   └─ AsyncStorage (cache e fila offline)
 
@@ -21,7 +21,7 @@ Retiradas e devoluções são transações atômicas no Firestore: a mesma trans
 | Camada | Tecnologia |
 |---|---|
 | Aplicativo | React Native + Expo + TypeScript |
-| Identidade técnica | Firebase Auth anônima |
+| Identidade e acesso | Firebase Auth + perfis admin/guarda no Firestore |
 | Banco | Cloud Firestore |
 | Offline | AsyncStorage + fila manual |
 | Web | Firebase Hosting |
@@ -34,7 +34,7 @@ Retiradas e devoluções são transações atômicas no Firestore: a mesma trans
 - npm 10+
 - Firebase CLI
 - projeto Firebase `coretech-chaves-e62e7`
-- provedor **Anônimo** habilitado em Authentication → Sign-in method
+- provedor **E-mail/senha** habilitado em Authentication → Sign-in method
 - Firestore criado no projeto
 
 ## Instalação
@@ -45,7 +45,16 @@ cd frontend
 npm ci --legacy-peer-deps
 ```
 
-O cliente Firebase é inicializado a partir de `frontend/google-services.json`. Esse arquivo identifica o projeto e não deve conter chave privada ou credencial administrativa.
+Copie `frontend/.env.example` para `frontend/.env.local` e preencha as variáveis públicas do aplicativo web obtidas em **Firebase Console → Configurações do projeto → Seus apps**. Nenhuma credencial administrativa é incluída no app.
+
+O primeiro administrador é criado por ferramenta local, usando a credencial de serviço apenas fora do aplicativo:
+
+```bash
+# Preencha FIREBASE_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS e ADMIN_* no .env
+npm run provision:admin
+```
+
+Depois disso, o administrador entra em `/admin` e cadastra os guardas com nome, matrícula e PIN de seis dígitos.
 
 ## Desenvolvimento
 
@@ -83,11 +92,13 @@ cd ..
 firebase deploy --only hosting,firestore:rules
 ```
 
-O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habilite Authentication anônima no Console Firebase e revise as regras com o Emulator Suite.
+O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habilite Authentication por e-mail/senha, crie o perfil inicial do administrador e revise as regras com o Emulator Suite.
 
 ## Modelo de segurança
 
 - toda leitura e escrita exige `request.auth != null`;
+- somente o administrador autenticado cria, lista, bloqueia ou reativa guardas;
+- o PIN fica apenas no Firebase Authentication e nunca é salvo no Firestore;
 - clientes não podem criar ou excluir chaves;
 - uma chave só pode alternar `disponivel ↔ em_uso`;
 - cada alteração de chave exige uma movimentação correspondente na mesma transação;
@@ -95,7 +106,7 @@ O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habi
 - movimentações não podem ser alteradas ou excluídas pelo cliente;
 - coleções não declaradas são negadas por padrão.
 
-Autenticação anônima identifica a instalação Firebase, não comprova a identidade civil do guarda. Nome e matrícula continuam sendo dados operacionais informados no aplicativo.
+O administrador entra com e-mail e senha e cadastra cada guarda com nome, matrícula e PIN. Somente perfis ativos podem acessar as chaves; somente guardas podem registrar movimentações.
 
 ## Documentação
 

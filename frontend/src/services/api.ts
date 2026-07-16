@@ -168,7 +168,7 @@ async function executarMovimentacao(
 ): Promise<ResultadoAplicacao> {
   const { db, uid } = await bancoAutenticado();
   const perfil = await perfilAtual();
-  if (!perfil || perfil.perfil !== "guarda") throw criarErro("SESSAO_INVALIDA", "Sessão de guarda inválida.", 401);
+  if (perfil?.perfil !== "guarda") throw criarErro("SESSAO_INVALIDA", "Sessão de guarda inválida.", 401);
   const payloadCanonico: MovimentacaoPayload = { ...payload, responsavel: { nome: perfil.nome, matricula: perfil.matricula } };
   const chaveRef = await resolverChave(db, codigo);
   const movimentacaoRef = doc(db, "movimentacoes", id);

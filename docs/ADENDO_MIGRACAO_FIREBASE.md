@@ -17,20 +17,20 @@ O RVS e o ERS permanecem como registros históricos do levantamento realizado em
 | Aspecto | Decisão histórica | Decisão vigente |
 |---|---|---|
 | Persistência central | PostgreSQL | Cloud Firestore |
-| Identidade técnica | Sem provedor remoto | Firebase Authentication anônima |
+| Identidade técnica | Sem provedor remoto | Firebase Authentication por e-mail/senha e perfis |
 | Acesso aos dados | Camada de servidor dedicada | SDK Firebase direto no aplicativo |
 | Offline | SQLite planejado | AsyncStorage com cache e fila manual |
 | Web | Não definido | Export estático no Firebase Hosting |
 
 ## Arquitetura vigente
 
-O aplicativo Expo autentica cada instalação anonimamente e acessa o Firestore diretamente. Retiradas e devoluções são executadas em transações atômicas que atualizam a chave e criam uma movimentação imutável. As Firestore Security Rules exigem autenticação, validam shapes e transições e negam coleções desconhecidas.
+O aplicativo Expo autentica administradores e guardas com Firebase Authentication e acessa o Firestore diretamente. O administrador cadastra guardas; retiradas e devoluções são executadas em transações atômicas que atualizam a chave e criam uma movimentação imutável. As Firestore Security Rules exigem perfil ativo, validam papéis, shapes e transições e negam coleções desconhecidas.
 
 O cache e a fila offline ficam no AsyncStorage. Ao recuperar conexão, o aplicativo reaplica as pendências no Firestore respeitando a política de conflito RN07.
 
 ## Segurança e limitações
 
-- Autenticação anônima identifica uma instalação Firebase, não comprova a identidade humana do guarda.
+- Administradores usam e-mail e senha; guardas usam matrícula e PIN cadastrados pelo administrador.
 - Nome e matrícula são dados operacionais e permanecem sujeitos às obrigações de minimização e acesso restrito da LGPD.
 - A carga inicial de chaves é administrativa; clientes não podem criar ou excluir chaves.
 - Conflitos entre dispositivos offline continuam sujeitos à política LWW aceita no MVP.
@@ -39,5 +39,5 @@ O cache e a fila offline ficam no AsyncStorage. Ao recuperar conexão, o aplicat
 ## Rastreabilidade
 
 - **ADR-0010** — adoção do Cloud Firestore.
-- **ADR-0015** — Firebase Auth anônimo, Firestore direto e Hosting estático.
+- **ADR-0015** — Firebase Auth com perfis, Firestore direto e Hosting estático.
 - **ADRs 0011–0014** — registros históricos superseded.

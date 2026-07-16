@@ -11,9 +11,10 @@
     "verify": "npm run lint && npm run typecheck",
     "verify:frontend": "npm --prefix frontend run verify && npm --prefix frontend run build",
     "verify:all": "npm run verify && npm run verify:frontend",
-    "emulators:start": "firebase emulators:start --only firestore,hosting",
+    "emulators:start": "firebase emulators:start --only auth,firestore,hosting",
     "seed": "tsx scripts/seed-firestore.ts",
     "seed:prod": "tsx scripts/seed-prod.ts",
+    "provision:admin": "tsx scripts/provision-admin.ts",
     "deploy": "npm run deploy:firebase",
     "deploy:firebase": "npm run verify:all && firebase deploy --only hosting,firestore:rules"
   },

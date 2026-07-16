@@ -31,7 +31,7 @@ export default function IdentificacaoScreen(): React.ReactElement {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Identificação do guarda</Text>
-      <Text style={styles.subtitle}>Informe seu nome e matrícula para registrar as operações.</Text>
+      <Text style={styles.subtitle}>Informe sua matrícula e o PIN fornecido pelo administrador.</Text>
       <TextInput
         style={styles.input}
         placeholder="Matrícula"
