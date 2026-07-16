@@ -60,7 +60,7 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 ### 2.3 Diferenciais competitivos
 
 - **Offline-first nativo:** não depende de conectividade contínua.
-- **Zero custo operacional:** hospedado no plano gratuito do Firebase (Spark).
+- **Infraestrutura unificada:** Authentication, Firestore e Hosting no mesmo projeto Firebase.
 - **Baixa curva de aprendizado:** interface mobile-first desenhada para uso imediato.
 - **Rastreabilidade completa:** todo registro é vinculado a responsável e horário.
 
@@ -76,7 +76,7 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 | Quadro virtual de chaves | Lista visual com status atualizado de cada chave. | RF02, RF03, UC01 |
 | Indicadores visuais | Verde = Disponível, Vermelho = Em uso. | RF03 |
 | Registro de retirada | Vincula chave a responsável + horário do dispositivo. | RF04, RN01, RN02, RN04, RN06, UC02 |
-| Bloqueio de retirada duplicada | Impede retirada se chave já estiver Em uso (HTTP 409). | RF05, RN01, UC02 |
+| Bloqueio de retirada duplicada | Impede retirada se chave já estiver Em uso. | RF05, RN01, UC02 |
 | Registro de devolução | Atualiza status para Disponível + horário do dispositivo. | RF06, RN03, RN05, UC03 |
 | Operação offline | Funcionamento completo sem internet, com cache local. | RF07, RNF03, US05 |
 | Sincronização automática | Envio de registros pendentes ao restaurar conexão. | RF08, RN07, RNF05, UC04 |
@@ -104,13 +104,13 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 | Critério | Métrica de verificação |
 |----------|------------------------|
 | Identificação funcional | Guarda consegue se identificar em até 3 toques. |
-| Retirada bloqueada | Segunda retirada da mesma chave retorna HTTP 409 com código `CHAVE_JA_EM_USO`. |
-| Devolução bloqueada | Devolução de chave Disponível retorna HTTP 409 com código `CHAVE_JA_DISPONIVEL`. |
+| Retirada bloqueada | Segunda retirada da mesma chave falha com código `CHAVE_JA_EM_USO`. |
+| Devolução bloqueada | Devolução de chave Disponível falha com código `CHAVE_JA_DISPONIVEL`. |
 | Modo offline | Aplicação opera sem internet por pelo menos 1 hora com cache local. |
 | Sincronização | Após restauração de conexão, registros pendentes são enviados automaticamente. |
 | Código de chave | Padrão `A/S9` validado tanto no cliente quanto no servidor. |
 | Harness validado | `npm run verify` passa sem erros (lint + typecheck + testes). |
-| Spec-Driven | Todo endpoint implementado corresponde 1:1 ao `openapi.yaml`. |
+| Spec-Driven | Schemas Zod, transações Firestore e Security Rules permanecem alinhados. |
 
 ### 4.2 Métricas de sucesso operacional
 
@@ -119,7 +119,7 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 | Tempo de transcrição entre turnos | Reduzido de 25-30 min para 0 min. |
 | Taxa de registros incompletos | Reduzida para 0% (validação obrigatória). |
 | Disponibilidade do sistema | 100% offline, sem dependência de servidor para operação local. |
-| Custo operacional mensal | R$ 0,00 (plano Spark do Firebase). |
+| Custo operacional mensal | Controlado pelas cotas do plano Blaze do Firebase. |
 
 ---
 
@@ -140,13 +140,13 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 5. Informa o nome e matrícula do professor/servidor que retira a chave.
 6. Confirma a retirada.
 7. O sistema registra localmente e atualiza o status para Em uso.
-8. Se houver internet, sincroniza automaticamente com o Firestore.
+8. Se houver internet, executa uma transação autenticada diretamente no Firestore.
 
 **Jornada de exceção (sem internet):**
 1. Mesmos passos 1-7 acima.
 2. O sistema exibe indicador visual "Modo Offline — Dados pendentes de sincronização".
-3. Os registros ficarm armazenados localmente no Firestore cache.
-4. Quando a internet retornar, o Firebase SDK sincroniza automaticamente.
+3. Os registros ficam armazenados localmente no AsyncStorage em uma fila pendente.
+4. Quando a internet retorna, o aplicativo aplica a fila em transações no Firestore.
 
 ---
 
@@ -171,11 +171,11 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 
 | Código | Descrição | Impacto no MVP |
 |--------|-----------|----------------|
-| RN01 | Uma chave não pode ser retirada por dois responsáveis simultaneamente. | HTTP 409 na retirada. |
+| RN01 | Uma chave não pode ser retirada por dois responsáveis simultaneamente. | Transação rejeitada com `CHAVE_JA_EM_USO`. |
 | RN02 | Toda retirada/devolução deve estar vinculada a nome e matrícula. | Campos obrigatórios no payload. |
 | RN03 | Devolução atualiza status para Disponível imediatamente. | Atualização síncrona local. |
 | RN04 | Código das chaves segue padrão `Bloco/Sala` (ex: `A/S9`). | Regex de validação no schema. |
-| RN05 | Não permite devolução de chave já Disponível. | HTTP 409 na devolução. |
+| RN05 | Não permite devolução de chave já Disponível. | Transação rejeitada com `CHAVE_JA_DISPONIVEL`. |
 | RN06 | Horários registrados são os do dispositivo (timestamp local). | Campo `timestampLocal` obrigatório. |
 | RN07 | Conflitos de sincronização: último timestamp vence (limitação documentada). | Algoritmo LWW no `SyncService`. |
 | RN08 | Uso digital depende de validação institucional (assinatura física). | Fora do escopo técnico do MVP. |
@@ -184,15 +184,15 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 
 ## 8. Arquitetura e Stack Tecnológica
 
-### 8.1 Stack final (conforme ADRs 0010-0012)
+### 8.1 Stack final (conforme ADRs 0010 e 0014)
 
 | Camada | Tecnologia | ADR de referência |
 |--------|-----------|-------------------|
 | Frontend mobile | React Native + Expo + TypeScript | ADR-0003 (original), mantido |
-| Backend / API | Firebase Cloud Functions (Node.js) | ADR-0011 |
+| Identidade técnica | Firebase Authentication anônima | ADR-0015 |
 | Banco de dados central | Firebase Cloud Firestore | ADR-0010 |
-| Cache local / Offline | Firestore SDK native cache | ADR-0012 |
-| Hospedagem | Firebase Hosting | ADR-0011 |
+| Cache local / Offline | AsyncStorage + fila manual de sincronização | ADR-0015 |
+| Hospedagem | Firebase Hosting (export web estático) | ADR-0015 |
 | Validação de dados | Zod (runtime schemas) | ADR-0003 (mantido) |
 | Testes | Vitest | ADR-0002 |
 | Lint | ESLint + TypeScript ESLint | ADR-0002 |
@@ -208,8 +208,8 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 - **ADR-0008:** Monolito modular com MVVM no frontend.
 - **ADR-0009:** Strategy pattern para regras de retirada/devolução; Observer para efeitos colaterais de sincronização.
 - **ADR-0010:** Substituição de PostgreSQL por Firebase Firestore.
-- **ADR-0011:** Hospedagem unificada no Firebase.
-- **ADR-0012:** Sincronização offline via cache nativo do Firestore.
+- **ADR-0011 a ADR-0014:** decisões históricas superseded pela ADR-0015.
+- **ADR-0015:** Expo → Auth anônima → Firestore direto, com Hosting estático e offline manual.
 
 ---
 
@@ -220,15 +220,15 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 Nenhuma linha de código é escrita antes que a especificação correspondente esteja travada. O desenvolvimento segue o ciclo:
 
 ```
-Spec (OpenAPI + Zod) → Feedforward (prompt com contrato injetado) → Geração de código → Harness (Lint → Typecheck → Testes) → Código aprovado
+Spec (Zod + modelo Firestore + Rules) → Feedforward → Geração de código → Harness (Lint → Typecheck → Testes) → Código aprovado
 ```
 
 ### 9.2 Mecanismo de Feedforward
 
 Todo prompt de geração de código contém, obrigatoriamente:
-1. Trecho do `openapi.yaml` com o path, request body e response codes.
-2. Schema Zod correspondente (importar, não recriar).
-3. ADR relevante (Strategy/Observer ou Vertical Slice).
+1. Schemas Zod e modelo das coleções envolvidos.
+2. Trecho relevante de `firestore.rules`.
+3. ADR-0015 e decisão de domínio aplicável.
 4. Códigos de RF/RN/UC/US envolvidos.
 
 ### 9.3 Mecanismo de Feedback (Harness)
