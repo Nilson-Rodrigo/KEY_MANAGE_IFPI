@@ -37,7 +37,8 @@ const chaves = [
   { codigo: "A/S5", status: "em_uso", responsavelAtual: { nome: "Ana", matricula: "2024000002" }, ultimaMovimentacaoEm: new Date().toISOString() },
 ];
 
-async function seed() {
+// Corrigido na linha 40: Adicionado o retorno ': Promise<void>'
+async function seed(): Promise<void> {
   console.log("Populando Firestore emulado com chaves...");
 
   for (const chave of chaves) {
