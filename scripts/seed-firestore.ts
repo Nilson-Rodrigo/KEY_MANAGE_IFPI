@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from "firebase-admin/app";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 const USE_EMULATOR = process.env.USE_FIREBASE_EMULATOR === "true";
@@ -9,7 +9,6 @@ if (!getApps().length) {
       projectId: process.env.FIREBASE_PROJECT_ID ?? "coretech-chaves",
     });
   } else {
-    const { cert } = await import("firebase-admin/app");
     initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID ?? "coretech-chaves",
@@ -37,7 +36,7 @@ const chaves = [
   { codigo: "A/S5", status: "em_uso", responsavelAtual: { nome: "Ana", matricula: "2024000002" }, ultimaMovimentacaoEm: new Date().toISOString() },
 ];
 
-async function seed() {
+async function seed(): Promise<void> {
   console.log("Populando Firestore emulado com chaves...");
 
   for (const chave of chaves) {
