@@ -15,6 +15,8 @@ import { CheckoutStrategy } from "./features/chaves/strategies/checkout.strategy
 import { ReturnStrategy } from "./features/chaves/strategies/return.strategy.js";
 import { tratarErros, validarContentType } from "./api/middleware/error.middleware.js";
 
+import { Request, Response } from "express";
+
 const app = express();
 
 if (!getApps().length) {
@@ -53,6 +55,24 @@ app.use(validarContentType);
 
 const rotas = criarRotas(chavesService, syncService);
 app.use("/v1", rotas);
+
+app.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({
+    nome: "CoreTech — Sistema de Gerenciamento de Acesso a Chaves",
+    versao: "1.0.0",
+    status: "operacional",
+    documentacao: "https://github.com/Nilson-Rodrigo/KEY_MANAGE_IFPI/blob/feature/frontend-expo-setup/src/specs/openapi.yaml",
+    endpoints: [
+      "POST /v1/identificacao",
+      "GET /v1/chaves",
+      "GET /v1/chaves/:codigo",
+      "GET /v1/chaves/:codigo/historico",
+      "POST /v1/chaves/:codigo/retirada",
+      "POST /v1/chaves/:codigo/devolucao",
+      "POST /v1/sync",
+    ],
+  });
+});
 
 app.use(tratarErros);
 
