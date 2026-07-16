@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import { IdentificacaoController } from "../controllers/identificacao.controller.js";
 import { ChavesController } from "../controllers/chaves.controller.js";
 import { SyncController } from "../controllers/sync.controller.js";
@@ -13,6 +13,24 @@ export function criarRotas(
   const identificacaoController = new IdentificacaoController();
   const chavesController = new ChavesController(chavesService);
   const syncController = new SyncController(syncService);
+
+  router.get("/", (_req: Request, res: Response) => {
+    res.status(200).json({
+      nome: "CoreTech — Sistema de Gerenciamento de Acesso a Chaves",
+      versao: "1.0.0",
+      status: "operacional",
+      documentacao: "https://github.com/Nilson-Rodrigo/KEY_MANAGE_IFPI/blob/feature/frontend-expo-setup/src/specs/openapi.yaml",
+      endpoints: [
+        "POST /v1/identificacao",
+        "GET /v1/chaves",
+        "GET /v1/chaves/:codigo",
+        "GET /v1/chaves/:codigo/historico",
+        "POST /v1/chaves/:codigo/retirada",
+        "POST /v1/chaves/:codigo/devolucao",
+        "POST /v1/sync",
+      ],
+    });
+  });
 
   router.post("/identificacao", identificacaoController.registrarIdentificacao);
 
