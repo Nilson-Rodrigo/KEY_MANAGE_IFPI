@@ -3,8 +3,10 @@ import { z } from "zod";
 export const CodigoChaveSchema = z
   .string()
   .trim()
-  .regex(/^[A-Za-z]+\/[A-Za-z0-9]+$/, "Código deve seguir o padrão Bloco/Sala, ex: A/S9")
-  .transform((codigo) => codigo.toUpperCase());
+  .min(2, "Informe um código com pelo menos 2 caracteres")
+  .max(40, "O código deve ter no máximo 40 caracteres")
+  .regex(/^[A-Za-z0-9À-ÿ][A-Za-z0-9À-ÿ /-]*$/, "Use letras, números, espaço, barra ou hífen")
+  .transform((codigo) => codigo.replace(/\s+/g, " ").toUpperCase());
 
 export const ChaveSchema = z.object({
   codigo: CodigoChaveSchema,

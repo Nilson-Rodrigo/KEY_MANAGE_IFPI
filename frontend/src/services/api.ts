@@ -15,7 +15,7 @@ import {
   type Firestore,
   type QueryDocumentSnapshot,
 } from "firebase/firestore";
-import { ChaveSchema, MovimentacaoSchema } from "../specs/schemas/chaves.schema";
+import { ChaveSchema, CodigoChaveSchema, MovimentacaoSchema } from "../specs/schemas/chaves.schema";
 import { firebaseServices } from "./firebase";
 import { perfilAtual } from "./auth";
 import { storage } from "./storage";
@@ -259,10 +259,9 @@ export const api = {
 
   async cadastrarChave(codigo: string, nome?: string, descricao?: string): Promise<Chave> {
     const { db } = await bancoAutenticado();
-    const codigoNormalizado = codigo.trim().toUpperCase();
-    if (!/^[A-Z]+\/[A-Z0-9]+$/.test(codigoNormalizado)) {
-      throw criarErro("CODIGO_INVALIDO", "Código deve seguir o padrão Bloco/Sala, ex: A/S1", 400);
-    }
+    const resultadoCodigo = CodigoChaveSchema.safeParse(codigo);
+    if (!resultadoCodigo.success) throw criarErro("CODIGO_INVALIDO", resultadoCodigo.error.issues[0]?.message ?? "Código inválido.", 400);
+    const codigoNormalizado = resultadoCodigo.data;
     const chaveRef = doc(db, "chaves", encodeURIComponent(codigoNormalizado));
     const existente = await getDoc(chaveRef);
     if (existente.exists()) {
@@ -270,8 +269,8 @@ export const api = {
     }
     const novaChave: Chave = {
       codigo: codigoNormalizado,
-      nome: nome?.trim() || undefined,
-      descricao: descricao?.trim() || undefined,
+      ...(nome?.trim() ? { nome: nome.trim() } : {}),
+      ...(descricao?.trim() ? { descricao: descricao.trim() } : {}),
       status: "disponivel",
       responsavelAtual: null,
       ultimaMovimentacaoEm: null,
@@ -298,14 +297,9 @@ export const api = {
 
   async editarChave(codigoAntigo: string, novoCodigo: string, novoNome?: string, novaDescricao?: string): Promise<Chave> {
     const { db } = await bancoAutenticado();
-    const codigoNormalizado = novoCodigo.trim().toUpperCase();
-    if (!/^[A-Z]+\/[A-Z0-9]+$/.test(codigoNormalizado)) {
-      throw criarErro("CODIGO_INVALIDO", "Código deve seguir o padrão Bloco/Sala, ex: A/S1", 400);
-    }
-    
-    if (codigoAntigo === codigoNormalizado) {
-      return this.buscarChave(codigoAntigo);
-    }
+    const resultadoCodigo = CodigoChaveSchema.safeParse(novoCodigo);
+    if (!resultadoCodigo.success) throw criarErro("CODIGO_INVALIDO", resultadoCodigo.error.issues[0]?.message ?? "Código inválido.", 400);
+    const codigoNormalizado = resultadoCodigo.data;
 
     const chaveAntigaRef = await resolverChave(db, codigoAntigo);
     const snapshotAntiga = await getDoc(chaveAntigaRef);
@@ -314,22 +308,36 @@ export const api = {
     }
 
     const chaveAntiga = mapearChave(snapshotAntiga, codigoAntigo);
+    const novaChave: Chave = {
+      ...chaveAntiga,
+      codigo: codigoNormalizado,
+      ...(novoNome?.trim() ? { nome: novoNome.trim() } : {}),
+      ...(novaDescricao?.trim() ? { descricao: novaDescricao.trim() } : {}),
+    };
+    const dadosNovaChave = {
+      codigo: novaChave.codigo,
+      ...(novoNome?.trim() ? { nome: novoNome.trim() } : {}),
+      ...(novaDescricao?.trim() ? { descricao: novaDescricao.trim() } : {}),
+      status: novaChave.status,
+      responsavelAtual: novaChave.responsavelAtual,
+      ultimaMovimentacaoEm: novaChave.ultimaMovimentacaoEm,
+    };
+
+    if (codigoAntigo === codigoNormalizado) {
+      const { setDoc } = await import("firebase/firestore");
+      await setDoc(chaveAntigaRef, dadosNovaChave);
+      return novaChave;
+    }
+
     const novaChaveRef = doc(db, "chaves", encodeURIComponent(codigoNormalizado));
     const snapshotNova = await getDoc(novaChaveRef);
     if (snapshotNova.exists()) {
       throw criarErro("CHAVE_JA_EXISTE", `A chave ${codigoNormalizado} já está cadastrada.`, 409);
     }
 
-    const novaChave: Chave = {
-      ...chaveAntiga,
-      codigo: codigoNormalizado,
-      nome: novoNome?.trim() || undefined,
-      descricao: novaDescricao?.trim() || undefined,
-    };
-
     const { writeBatch } = await import("firebase/firestore");
     const batch = writeBatch(db);
-    batch.set(novaChaveRef, novaChave);
+    batch.set(novaChaveRef, dadosNovaChave);
     batch.delete(chaveAntigaRef);
     await batch.commit();
     return novaChave;

@@ -136,7 +136,7 @@ export default function GerenciarChavesScreen(): React.ReactNode {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{chaveEditando ? "Editar Chave" : "Nova Chave"}</Text>
-            <TextInput style={styles.input} placeholder="Código (Ex: A/S1) *" value={codigoInput} onChangeText={setCodigoInput} autoCapitalize="characters" />
+            <TextInput style={styles.input} placeholder="Código (ex.: Sala 2 ou A/S3) *" value={codigoInput} onChangeText={setCodigoInput} autoCapitalize="characters" />
             <TextInput style={styles.input} placeholder="Nome (Ex: Lab Info)" value={nomeInput} onChangeText={setNomeInput} />
             <TextInput style={[styles.input, { marginBottom: 24 }]} placeholder="Descrição" value={descricaoInput} onChangeText={setDescricaoInput} />
             <View style={styles.modalActions}>
