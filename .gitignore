@@ -53,3 +53,10 @@ venv/
 .antigravity/
 .specify/
 agent-os/
+
+# Android/iOS Build Artifacts
+android/
+ios/
+.gradle/
+*.apk
+*.aab
