@@ -1,12 +1,61 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { View, Text, StyleSheet, Animated, Pressable, ActivityIndicator } from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, shadows } from "../../src/presentation/theme";
 import { useApp } from "../../src/context/AppContext";
+import { api } from "../../src/services/api";
+import { listarGuardas } from "../../src/services/auth";
+
+function AnimatedCard({ children, onPress, delay = 0 }: { children: React.ReactNode; onPress: () => void; delay?: number }): React.ReactElement {
+  const scale = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, delay, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const onPressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
+  const onPressOut = () => Animated.spring(scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }, { scale }] }}>
+      <Pressable style={styles.card} onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
 
 export default function AdminScreen(): React.ReactNode {
   const router = useRouter();
   const { perfil } = useApp();
+  const [totalChaves, setTotalChaves] = useState<number | null>(null);
+  const [totalGuardas, setTotalGuardas] = useState<number | null>(null);
+  const [guardasAtivos, setGuardasAtivos] = useState<number | null>(null);
+  const [chavesEmUso, setChavesEmUso] = useState<number | null>(null);
+  const [carregando, setCarregando] = useState(true);
+
+  const carregar = useCallback(async () => {
+    setCarregando(true);
+    try {
+      const [chaves, guardas] = await Promise.all([api.listarChaves(), listarGuardas()]);
+      setTotalChaves(chaves.length);
+      setChavesEmUso(chaves.filter((c) => c.status === "em_uso").length);
+      setTotalGuardas(guardas.length);
+      setGuardasAtivos(guardas.filter((g) => g.ativo).length);
+    } catch {
+      // silently fail
+    } finally {
+      setCarregando(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => { void carregar(); }, [carregar]));
 
   if (perfil !== "admin") {
     return (
@@ -24,84 +73,65 @@ export default function AdminScreen(): React.ReactNode {
         <Text style={styles.heroSubtitle}>Gerencie os guardas e as chaves do sistema.</Text>
       </View>
 
+      {/* Contadores */}
+      <View style={styles.counters}>
+        <View style={[styles.counterCard, { borderLeftColor: colors.brand }]}>
+          {carregando ? <ActivityIndicator size="small" /> : <Text style={[styles.counterValue, { color: colors.brand }]}>{totalChaves ?? "—"}</Text>}
+          <Text style={styles.counterLabel}>Chaves</Text>
+        </View>
+        <View style={[styles.counterCard, { borderLeftColor: "#dc2626" }]}>
+          {carregando ? <ActivityIndicator size="small" /> : <Text style={[styles.counterValue, { color: "#dc2626" }]}>{chavesEmUso ?? "—"}</Text>}
+          <Text style={styles.counterLabel}>Em uso</Text>
+        </View>
+        <View style={[styles.counterCard, { borderLeftColor: colors.success }]}>
+          {carregando ? <ActivityIndicator size="small" /> : <Text style={[styles.counterValue, { color: colors.success }]}>{guardasAtivos ?? "—"}</Text>}
+          <Text style={styles.counterLabel}>Guardas ativos</Text>
+        </View>
+      </View>
+
+      {/* Cards de ação */}
       <View style={styles.grid}>
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={() => router.push("/admin/guardas")}
-          accessibilityRole="button"
-        >
+        <AnimatedCard onPress={() => router.push("/admin/guardas")} delay={100}>
           <View style={[styles.iconContainer, { backgroundColor: colors.brandSoft }]}>
             <MaterialCommunityIcons name="shield-account" size={32} color={colors.brand} />
           </View>
           <Text style={styles.cardTitle}>Gerenciar Guardas</Text>
           <Text style={styles.cardDesc}>Adicionar, editar ou inativar perfis de acesso</Text>
-        </TouchableOpacity>
+          {totalGuardas !== null && <Text style={styles.cardBadge}>{totalGuardas} cadastrados</Text>}
+        </AnimatedCard>
 
-        <TouchableOpacity 
-          style={styles.card} 
-          onPress={() => router.push("/admin/chaves")}
-          accessibilityRole="button"
-        >
+        <AnimatedCard onPress={() => router.push("/admin/chaves")} delay={200}>
           <View style={[styles.iconContainer, { backgroundColor: "#fef3c7" }]}>
             <MaterialCommunityIcons name="key-variant" size={32} color="#d97706" />
           </View>
           <Text style={styles.cardTitle}>Gerenciar Chaves</Text>
           <Text style={styles.cardDesc}>Cadastrar, editar ou remover chaves do quadro</Text>
-        </TouchableOpacity>
+          {totalChaves !== null && <Text style={styles.cardBadge}>{totalChaves} cadastradas</Text>}
+        </AnimatedCard>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    padding: 16,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorText: {
-    fontSize: 18,
-    color: colors.danger,
-    fontWeight: "bold",
-  },
-  hero: { paddingVertical: 12, gap: 4, marginBottom: 24, paddingHorizontal: 8 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  errorText: { fontSize: 18, color: colors.danger, fontWeight: "bold" },
+  hero: { paddingVertical: 12, gap: 4, marginBottom: 16, paddingHorizontal: 8 },
   heroEyebrow: { color: colors.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.3 },
   heroTitle: { color: colors.text, fontSize: 27, fontWeight: "800" },
   heroSubtitle: { color: colors.muted, fontSize: 14 },
-  grid: {
-    gap: 16,
-    width: "100%",
-    maxWidth: 900,
-    alignSelf: "center",
-  },
+  counters: { flexDirection: "row", gap: 8, marginBottom: 20 },
+  counterCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderLeftWidth: 4, ...shadows.card },
+  counterValue: { fontSize: 22, fontWeight: "900" },
+  counterLabel: { fontSize: 11, color: colors.muted, fontWeight: "600" },
+  grid: { gap: 16, width: "100%", maxWidth: 900, alignSelf: "center" },
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: 18,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.card,
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: 8,
+    backgroundColor: colors.surface, borderRadius: 18, padding: 20, borderWidth: 1, borderColor: colors.border, ...shadows.card,
+    flexDirection: "column", alignItems: "flex-start", gap: 8,
   },
-  iconContainer: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: colors.text,
-  },
-  cardDesc: {
-    fontSize: 14,
-    color: colors.muted,
-  },
+  iconContainer: { padding: 12, borderRadius: 12, marginBottom: 4 },
+  cardTitle: { fontSize: 18, fontWeight: "bold", color: colors.text },
+  cardDesc: { fontSize: 14, color: colors.muted },
+  cardBadge: { fontSize: 12, fontWeight: "700", color: colors.brand, backgroundColor: colors.brandSoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 4 },
 });

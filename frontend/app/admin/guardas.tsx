@@ -1,18 +1,28 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { listarGuardas, cadastrarGuarda, editarGuarda, apagarGuarda, type Usuario } from "../../src/services/auth";
+import { listarGuardas, cadastrarGuarda, editarGuarda, apagarGuarda, alterarStatusGuarda, type Usuario } from "../../src/services/auth";
+import { SearchBar } from "../../src/presentation/components/SearchBar";
+import { showToast } from "../../src/presentation/components/Toast";
 import { colors, shadows } from "../../src/presentation/theme";
+
+const AVATAR_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
+
+function avatarColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
 export default function GerenciarGuardasScreen(): React.ReactNode {
   const [guardas, setGuardas] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  
   const [nome, setNome] = useState("");
   const [matricula, setMatricula] = useState("");
   const [pin, setPin] = useState("");
   const [guardaEditando, setGuardaEditando] = useState<Usuario | null>(null);
+  const [busca, setBusca] = useState("");
 
   const carregarGuardas = useCallback(async () => {
     setLoading(true);
@@ -20,105 +30,148 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
       const data = await listarGuardas();
       setGuardas(data);
     } catch (error) {
-      Alert.alert("Erro", "Falha ao carregar guardas.");
+      showToast("Falha ao carregar guardas.", "error");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void carregarGuardas();
-  }, [carregarGuardas]);
+  useEffect(() => { void carregarGuardas(); }, [carregarGuardas]);
+
+  const filtrados = guardas.filter((g) => {
+    if (!busca.trim()) return true;
+    const q = busca.toLowerCase();
+    return g.nome.toLowerCase().includes(q) || g.matricula.toLowerCase().includes(q);
+  });
 
   const handleSalvar = async () => {
     if (!nome.trim() || !matricula.trim()) {
-      Alert.alert("Aviso", "Preencha nome e matrícula.");
+      showToast("Preencha nome e matrícula.", "warning");
       return;
     }
-    
     try {
       if (guardaEditando) {
         await editarGuarda(guardaEditando, nome, matricula);
-        Alert.alert("Sucesso", "Guarda atualizado com sucesso!");
+        showToast("Guarda atualizado com sucesso!", "success");
       } else {
         if (!pin.trim() || pin.length !== 6) {
-          Alert.alert("Aviso", "Para novos guardas, informe um PIN de 6 dígitos.");
+          showToast("Para novos guardas, informe um PIN de 6 dígitos.", "warning");
           return;
         }
         await cadastrarGuarda(nome, matricula, pin);
-        Alert.alert("Sucesso", "Guarda cadastrado com sucesso!");
+        showToast("Guarda cadastrado com sucesso!", "success");
       }
       setModalVisible(false);
       void carregarGuardas();
     } catch (error: any) {
-      Alert.alert("Erro", error.message || "Falha ao salvar o guarda.");
+      showToast(error.message || "Falha ao salvar o guarda.", "error");
     }
   };
 
-  const handleApagar = (guarda: Usuario) => {
-    Alert.alert("Inativar guarda", `Tem certeza que deseja inativar ${guarda.nome}? Ele não poderá mais acessar o sistema.`, [
-      { text: "Cancelar", style: "cancel" },
-      { text: "Inativar", style: "destructive", onPress: async () => {
-        try {
-          await apagarGuarda(guarda);
-          Alert.alert("Sucesso", "Guarda inativado com sucesso!");
-          void carregarGuardas();
-        } catch (error: any) {
-          Alert.alert("Erro", error.message || "Falha ao inativar guarda.");
-        }
-      }}
-    ]);
+  const handleApagar = async (guarda: Usuario) => {
+    try {
+      await apagarGuarda(guarda);
+      showToast(`${guarda.nome} foi removido do sistema.`, "success");
+      void carregarGuardas();
+    } catch (error: any) {
+      showToast(error.message || "Falha ao remover guarda.", "error");
+    }
   };
 
-  const renderItem = ({ item }: { item: Usuario }) => (
-    <View style={[styles.card, !item.ativo && styles.cardInativo]}>
-      <View style={styles.cardInfo}>
-        <Text style={styles.nome}>{item.nome}</Text>
-        <Text style={styles.matricula}>Matrícula: {item.matricula}</Text>
-        {!item.ativo && <Text style={styles.statusInativo}>Inativo</Text>}
+  const handleReativar = async (guarda: Usuario) => {
+    try {
+      await alterarStatusGuarda(guarda, true);
+      showToast(`${guarda.nome} foi reativado!`, "success");
+      void carregarGuardas();
+    } catch (error: any) {
+      showToast(error.message || "Falha ao reativar guarda.", "error");
+    }
+  };
+
+  const handleBloquear = async (guarda: Usuario) => {
+    try {
+      await alterarStatusGuarda(guarda, false);
+      showToast(`${guarda.nome} foi bloqueado.`, "info");
+      void carregarGuardas();
+    } catch (error: any) {
+      showToast(error.message || "Falha ao bloquear guarda.", "error");
+    }
+  };
+
+  const renderItem = ({ item }: { item: Usuario }) => {
+    const bgColor = avatarColor(item.nome);
+    return (
+      <View style={[styles.card, !item.ativo && styles.cardInativo]}>
+        <View style={styles.cardLeft}>
+          <View style={[styles.avatar, { backgroundColor: bgColor }]}>
+            <Text style={styles.avatarText}>{item.nome.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.cardInfo}>
+            <Text style={styles.nome}>{item.nome}</Text>
+            <Text style={styles.matricula}>Matrícula: {item.matricula}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: item.ativo ? colors.successSoft : colors.dangerSoft }]}>
+              <View style={[styles.statusDot, { backgroundColor: item.ativo ? colors.success : colors.danger }]} />
+              <Text style={[styles.statusText, { color: item.ativo ? colors.success : colors.danger }]}>{item.ativo ? "Ativo" : "Inativo"}</Text>
+            </View>
+          </View>
+        </View>
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => {
+            setGuardaEditando(item);
+            setNome(item.nome);
+            setMatricula(item.matricula);
+            setPin("");
+            setModalVisible(true);
+          }}>
+            <MaterialCommunityIcons name="pencil" size={18} color={colors.brand} />
+          </TouchableOpacity>
+          {item.ativo ? (
+            <TouchableOpacity style={styles.iconBtn} onPress={() => void handleBloquear(item)}>
+              <MaterialCommunityIcons name="account-lock" size={18} color={colors.warning} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[styles.iconBtn, { backgroundColor: colors.successSoft }]} onPress={() => void handleReativar(item)}>
+              <MaterialCommunityIcons name="account-check" size={18} color={colors.success} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.iconBtn} onPress={() => void handleApagar(item)}>
+            <MaterialCommunityIcons name="delete" size={18} color={colors.danger} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => { 
-          setGuardaEditando(item); 
-          setNome(item.nome); 
-          setMatricula(item.matricula); 
-          setPin(""); 
-          setModalVisible(true); 
-        }}>
-          <MaterialCommunityIcons name="pencil" size={20} color={colors.brand} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn} onPress={() => handleApagar(item)}>
-          <MaterialCommunityIcons name="delete" size={20} color={colors.danger} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Gerenciar Guardas</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => { 
-          setGuardaEditando(null); 
-          setNome(""); 
-          setMatricula(""); 
-          setPin(""); 
-          setModalVisible(true); 
+        <TouchableOpacity style={styles.addButton} onPress={() => {
+          setGuardaEditando(null); setNome(""); setMatricula(""); setPin(""); setModalVisible(true);
         }}>
           <MaterialCommunityIcons name="plus" size={24} color="#fff" />
-          <Text style={styles.addButtonText}>Novo Guarda</Text>
+          <Text style={styles.addButtonText}>Novo</Text>
         </TouchableOpacity>
       </View>
 
+      <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+        <SearchBar value={busca} onChangeText={setBusca} placeholder="Buscar guarda..." />
+      </View>
+
       {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" style={{ marginTop: 40 }} color={colors.brand} />
       ) : (
         <FlatList
-          data={guardas}
+          data={filtrados}
           keyExtractor={(item) => item.uid}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={styles.empty}>Nenhum guarda cadastrado.</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="account-off" size={40} color={colors.muted} />
+              <Text style={styles.empty}>{busca ? "Nenhum guarda encontrado." : "Nenhum guarda cadastrado."}</Text>
+            </View>
+          }
         />
       )}
 
@@ -126,32 +179,11 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{guardaEditando ? "Editar Guarda" : "Novo Guarda"}</Text>
-            
-            <TextInput
-              style={styles.input}
-              placeholder="Nome"
-              value={nome}
-              onChangeText={setNome}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Matrícula"
-              value={matricula}
-              onChangeText={setMatricula}
-              autoCapitalize="none"
-            />
+            <TextInput style={styles.input} placeholder="Nome" value={nome} onChangeText={setNome} />
+            <TextInput style={styles.input} placeholder="Matrícula" value={matricula} onChangeText={setMatricula} autoCapitalize="none" />
             {!guardaEditando && (
-              <TextInput
-                style={styles.input}
-                placeholder="PIN (6 dígitos)"
-                value={pin}
-                onChangeText={setPin}
-                keyboardType="numeric"
-                maxLength={6}
-                secureTextEntry
-              />
+              <TextInput style={styles.input} placeholder="PIN (6 dígitos)" value={pin} onChangeText={setPin} keyboardType="numeric" maxLength={6} secureTextEntry />
             )}
-
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalBtnTextCancel}>Cancelar</Text>
@@ -169,27 +201,33 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', color: colors.text },
-  addButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
-  addButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 4 },
+  header: { padding: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  title: { fontSize: 22, fontWeight: "bold", color: colors.text },
+  addButton: { flexDirection: "row", alignItems: "center", backgroundColor: colors.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, gap: 4 },
+  addButtonText: { color: "#fff", fontWeight: "bold" },
   list: { padding: 16, gap: 12 },
-  card: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', ...shadows.card },
-  cardInativo: { opacity: 0.5 },
-  cardInfo: { flex: 1 },
-  nome: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-  matricula: { fontSize: 14, color: colors.muted },
-  statusInativo: { fontSize: 12, color: colors.danger, fontWeight: 'bold', marginTop: 4 },
-  actions: { flexDirection: 'row', gap: 12 },
-  iconBtn: { padding: 8, backgroundColor: colors.background, borderRadius: 8 },
-  empty: { textAlign: 'center', marginTop: 24, color: colors.muted },
-  modalContainer: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 16 },
+  card: { backgroundColor: colors.surface, padding: 14, borderRadius: 14, flexDirection: "row", justifyContent: "space-between", alignItems: "center", ...shadows.card },
+  cardInativo: { opacity: 0.6 },
+  cardLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  avatar: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: "#fff", fontSize: 18, fontWeight: "900" },
+  cardInfo: { flex: 1, gap: 2 },
+  nome: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  matricula: { fontSize: 13, color: colors.muted },
+  statusBadge: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginTop: 4 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusText: { fontSize: 11, fontWeight: "700" },
+  actions: { flexDirection: "column", gap: 6 },
+  iconBtn: { padding: 7, backgroundColor: colors.background, borderRadius: 8 },
+  emptyContainer: { alignItems: "center", marginTop: 40, gap: 12 },
+  empty: { textAlign: "center", color: colors.muted },
+  modalContainer: { flex: 1, justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)", padding: 16 },
   modalContent: { backgroundColor: colors.surface, padding: 24, borderRadius: 16, ...shadows.card },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
-  input: { borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 16 },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 8 },
+  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  input: { borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 12 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 8 },
   modalBtnCancel: { padding: 12 },
-  modalBtnTextCancel: { color: colors.muted, fontWeight: 'bold' },
+  modalBtnTextCancel: { color: colors.muted, fontWeight: "bold" },
   modalBtnSave: { backgroundColor: colors.brand, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
-  modalBtnTextSave: { color: '#fff', fontWeight: 'bold' }
+  modalBtnTextSave: { color: "#fff", fontWeight: "bold" },
 });
