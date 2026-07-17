@@ -1,7 +1,8 @@
 import { Tabs } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Button } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { useApp } from "../../src/context/AppContext";
+import { colors } from "../../src/presentation/theme";
 
 /**
  * Layout de abas (tabs) da aplicação.
@@ -9,9 +10,9 @@ import { useApp } from "../../src/context/AppContext";
  * @returns Componente de navegação por abas configurado
  */
 export default function TabLayout(): React.ReactNode {
-  const { sair } = useApp();
+  const { sair, perfil } = useApp();
   return (
-    <Tabs screenOptions={{ headerRight: () => <Button title="Sair" onPress={() => void sair()} /> }}>
+    <Tabs screenOptions={{ headerStyle: styles.header, headerTitleStyle: styles.headerTitle, headerShadowVisible: false, headerRight: () => <Pressable style={styles.exit} onPress={() => void sair()}><Text style={styles.exitText}>Sair</Text></Pressable>, tabBarActiveTintColor: colors.brand, tabBarInactiveTintColor: colors.muted, tabBarStyle: styles.tabBar, tabBarLabelStyle: styles.tabLabel }}>
       <Tabs.Screen
         name="quadro"
         options={{
@@ -30,6 +31,21 @@ export default function TabLayout(): React.ReactNode {
           ),
         }}
       />
+      <Tabs.Screen
+        name="painel"
+        options={{
+          title: "Admin",
+          href: perfil === "admin" ? "/painel" : null,
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="shield-account" size={24} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  header: { backgroundColor: colors.surface }, headerTitle: { color: colors.brandDark, fontWeight: "800" }, exit: { marginRight: 16, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10, backgroundColor: colors.brandSoft }, exitText: { color: colors.brand, fontWeight: "700" },
+  tabBar: { height: 68, paddingTop: 7, paddingBottom: 8, borderTopColor: colors.border, backgroundColor: colors.surface }, tabLabel: { fontSize: 12, fontWeight: "700" },
+});

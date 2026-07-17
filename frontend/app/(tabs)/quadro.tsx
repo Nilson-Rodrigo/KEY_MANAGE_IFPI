@@ -1,41 +1,39 @@
 import { useCallback, useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ChaveSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
 import { api } from "../../src/services/api";
 import { storage } from "../../src/services/storage";
+import { SearchBar } from "../../src/presentation/components/SearchBar";
+import { FilterChips } from "../../src/presentation/components/FilterChips";
+import { showToast } from "../../src/presentation/components/Toast";
+import { colors, shadows } from "../../src/presentation/theme";
 
-/** Tipo que representa uma chave no sistema */
 type Chave = {
-  /** Código identificador da chave */
   codigo: string;
-  /** Status atual: disponível ou em uso */
+  nome?: string;
+  descricao?: string;
   status: "disponivel" | "em_uso";
-  /** Responsável atual pela chave, se estiver em uso */
   responsavelAtual: { nome: string; matricula: string } | null;
-  /** Data/hora da última movimentação registrada */
   ultimaMovimentacaoEm: string | null;
 };
 
-/**
- * Tela principal que exibe o quadro de chaves.
- * Permite visualizar, retirar e devolver chaves.
- * Funciona offline usando dados em cache.
- * @returns Componente da tela de quadro de chaves
- */
+const FILTROS = [
+  { label: "Todas", value: "todas" },
+  { label: "🟢 Disponíveis", value: "disponivel" },
+  { label: "🔴 Em uso", value: "em_uso" },
+];
+
 export default function QuadroChavesScreen(): React.ReactNode {
-  /** Lista de chaves exibidas na tela */
   const [chaves, setChaves] = useState<Chave[]>([]);
-  /** Indica se os dados estão sendo carregados */
   const [carregando, setCarregando] = useState(true);
-  /** Indica se o aplicativo está offline */
   const [offline, setOffline] = useState(false);
   const [pendentes, setPendentes] = useState(0);
+  const [busca, setBusca] = useState("");
+  const [filtro, setFiltro] = useState("todas");
   const router = useRouter();
 
-  /**
-   * Carrega a lista de chaves da API ou do cache.
-   */
   const carregarChaves = useCallback(async (): Promise<void> => {
     try {
       const { isOffline, isConnected } = await storage.getNetworkStatus();
@@ -43,7 +41,10 @@ export default function QuadroChavesScreen(): React.ReactNode {
       if (isConnected) {
         const resultado = await api.sincronizarPendencias();
         if (resultado.conflitos > 0) {
-          Alert.alert("Conflito de sincronização", `${resultado.conflitos} operação(ões) foram substituídas por registros mais recentes.`);
+          showToast(`${resultado.conflitos} operação(ões) com conflito de sincronização.`, "warning");
+        }
+        if (resultado.sincronizadas > 0) {
+          showToast(`${resultado.sincronizadas} registro(s) sincronizado(s).`, "success");
         }
       }
       setPendentes((await storage.buscarMovimentacoesPendentes()).length);
@@ -54,9 +55,9 @@ export default function QuadroChavesScreen(): React.ReactNode {
       const cached = await storage.buscarChavesCache();
       if (cached) {
         setChaves(cached as Chave[]);
-        Alert.alert("Modo Offline", "Exibindo dados em cache. Algumas funcionalidades podem estar limitadas.");
+        showToast("Exibindo dados em cache (modo offline).", "info");
       } else {
-        Alert.alert("Erro", "Não foi possível carregar as chaves.");
+        showToast("Não foi possível carregar as chaves.", "error");
       }
     } finally {
       setCarregando(false);
@@ -72,62 +73,67 @@ export default function QuadroChavesScreen(): React.ReactNode {
     return (): void => clearInterval(interval);
   }, [carregarChaves]);
 
-  /**
-   * Navega para a tela de retirada de uma chave específica.
-   * @param codigo - Código da chave a ser retirada
-   */
+  // Filtragem
+  const chavesFiltradas = chaves.filter((chave) => {
+    if (filtro !== "todas" && chave.status !== filtro) return false;
+    if (busca.trim()) {
+      const q = busca.toLowerCase();
+      return (
+        chave.codigo.toLowerCase().includes(q) ||
+        (chave.nome?.toLowerCase().includes(q) ?? false) ||
+        (chave.descricao?.toLowerCase().includes(q) ?? false) ||
+        (chave.responsavelAtual?.nome.toLowerCase().includes(q) ?? false)
+      );
+    }
+    return true;
+  });
+
+  const totalDisponivel = chaves.filter((c) => c.status === "disponivel").length;
+  const totalEmUso = chaves.filter((c) => c.status === "em_uso").length;
+
   const abrirRetirada = (codigo: string): void => {
     const parsed = CodigoChaveSchema.safeParse(codigo);
-    if (!parsed.success) {
-      Alert.alert("Código inválido", "O código da chave não segue o padrão A/S9.");
-      return;
-    }
+    if (!parsed.success) { showToast("Código de chave inválido.", "error"); return; }
     router.push(`/retirada/${codigo}`);
   };
 
-  /**
-   * Navega para a tela de devolução de uma chave específica.
-   * @param codigo - Código da chave a ser devolvida
-   */
   const abrirDevolucao = (codigo: string): void => {
     const parsed = CodigoChaveSchema.safeParse(codigo);
-    if (!parsed.success) {
-      Alert.alert("Código inválido", "O código da chave não segue o padrão A/S9.");
-      return;
-    }
+    if (!parsed.success) { showToast("Código de chave inválido.", "error"); return; }
     router.push(`/devolucao/${codigo}`);
   };
 
-  /**
-   * Navega para a tela de histórico de uma chave específica.
-   * @param codigo - Código da chave
-   */
   const abrirHistorico = (codigo: string): void => {
     router.push(`/historico/${codigo}`);
   };
 
-  /**
-   * Renderiza um item (chave) na lista.
-   * @param item - Objeto da chave a ser renderizado
-   * @returns Elemento React representando o card da chave
-   */
   const renderChave = ({ item }: { item: Chave }): React.ReactElement => {
     const disponivel = item.status === "disponivel";
-    const cardColor = disponivel ? "#dcfce7" : "#fee2e2";
-
     return (
-      <View style={[styles.card, { backgroundColor: cardColor, borderLeftColor: disponivel ? "#16a34a" : "#dc2626" }]}>
+      <View style={[styles.card, { backgroundColor: disponivel ? colors.successSoft : colors.dangerSoft, borderColor: disponivel ? "#BCE5D5" : "#F2C6CD" }]}>
         <View style={styles.header}>
-          <Text style={[styles.codigo, { color: "#111827" }]}>{item.codigo}</Text>
+          <View style={styles.headerLeft}>
+            <View style={[styles.keyIcon, { backgroundColor: disponivel ? "#16a34a" : "#dc2626" }]}>
+              <MaterialCommunityIcons name={disponivel ? "key-variant" : "key-remove"} size={18} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.codigo}>{item.codigo}</Text>
+              {!!item.nome && <Text style={styles.nomeChave}>{item.nome}</Text>}
+              {!!item.descricao && <Text style={styles.descricaoChave}>{item.descricao}</Text>}
+            </View>
+          </View>
           <View style={[styles.badge, { backgroundColor: disponivel ? "#16a34a" : "#dc2626" }]}>
             <Text style={styles.badgeText}>{disponivel ? "Disponível" : "Em uso"}</Text>
           </View>
         </View>
 
         {!disponivel && item.responsavelAtual && (
-          <Text style={styles.responsavel}>
-            Responsável: {item.responsavelAtual.nome} ({item.responsavelAtual.matricula})
-          </Text>
+          <View style={styles.responsavelRow}>
+            <MaterialCommunityIcons name="account" size={16} color="#374151" />
+            <Text style={styles.responsavel}>
+              {item.responsavelAtual.nome} ({item.responsavelAtual.matricula})
+            </Text>
+          </View>
         )}
 
         <View style={styles.actions}>
@@ -135,10 +141,8 @@ export default function QuadroChavesScreen(): React.ReactNode {
             style={[styles.button, disponivel ? styles.primaryButton : styles.disabledButton]}
             onPress={() => abrirRetirada(item.codigo)}
             disabled={!disponivel}
-            accessibilityRole="button"
-            accessibilityLabel={`Retirar chave ${item.codigo}`}
-            accessibilityState={{ disabled: !disponivel }}
           >
+            <MaterialCommunityIcons name="arrow-up-circle" size={16} color={disponivel ? "#fff" : "#9ca3af"} />
             <Text style={[styles.buttonText, disponivel && styles.primaryButtonText]}>Retirar</Text>
           </TouchableOpacity>
 
@@ -146,14 +150,13 @@ export default function QuadroChavesScreen(): React.ReactNode {
             style={[styles.button, !disponivel ? styles.secondaryButton : styles.disabledButton]}
             onPress={() => abrirDevolucao(item.codigo)}
             disabled={disponivel}
-            accessibilityRole="button"
-            accessibilityLabel={`Devolver chave ${item.codigo}`}
-            accessibilityState={{ disabled: disponivel }}
           >
+            <MaterialCommunityIcons name="arrow-down-circle" size={16} color={!disponivel ? "#fff" : "#9ca3af"} />
             <Text style={[styles.buttonText, !disponivel && styles.secondaryButtonText]}>Devolver</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.ghostButton]} onPress={() => abrirHistorico(item.codigo)} accessibilityRole="button" accessibilityLabel={`Ver histórico da chave ${item.codigo}`}>
+          <TouchableOpacity style={[styles.button, styles.ghostButton]} onPress={() => abrirHistorico(item.codigo)}>
+            <MaterialCommunityIcons name="history" size={16} color="#111827" />
             <Text style={styles.ghostButtonText}>Histórico</Text>
           </TouchableOpacity>
         </View>
@@ -164,8 +167,8 @@ export default function QuadroChavesScreen(): React.ReactNode {
   if (carregando) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10 }}>Carregando chaves...</Text>
+        <ActivityIndicator size="large" color={colors.brand} />
+        <Text style={{ marginTop: 10, color: colors.muted }}>Carregando chaves...</Text>
       </View>
     );
   }
@@ -174,118 +177,91 @@ export default function QuadroChavesScreen(): React.ReactNode {
     <View style={styles.container}>
       {(offline || pendentes > 0) && (
         <View style={styles.offlineBanner}>
+          <MaterialCommunityIcons name={offline ? "wifi-off" : "sync"} size={16} color="#78350f" />
           <Text style={styles.offlineText}>
-            {offline ? "📴 Modo offline" : "🔄 Sincronização pendente"} — {pendentes} registro(s)
+            {offline ? "Modo offline" : "Sincronização pendente"} — {pendentes} registro(s)
           </Text>
         </View>
       )}
       <FlatList
-        data={chaves}
+        data={chavesFiltradas}
         keyExtractor={(item) => item.codigo}
         renderItem={renderChave}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <View style={styles.hero}>
+              <Text style={styles.heroEyebrow}>VISÃO GERAL</Text>
+              <Text style={styles.heroTitle}>Quadro de chaves</Text>
+            </View>
+
+            <View style={styles.counters}>
+              <View style={[styles.counterCard, { borderLeftColor: colors.brand }]}>
+                <Text style={[styles.counterValue, { color: colors.brand }]}>{chaves.length}</Text>
+                <Text style={styles.counterLabel}>Total</Text>
+              </View>
+              <View style={[styles.counterCard, { borderLeftColor: "#16a34a" }]}>
+                <Text style={[styles.counterValue, { color: "#16a34a" }]}>{totalDisponivel}</Text>
+                <Text style={styles.counterLabel}>Disponíveis</Text>
+              </View>
+              <View style={[styles.counterCard, { borderLeftColor: "#dc2626" }]}>
+                <Text style={[styles.counterValue, { color: "#dc2626" }]}>{totalEmUso}</Text>
+                <Text style={styles.counterLabel}>Em uso</Text>
+              </View>
+            </View>
+
+            <SearchBar value={busca} onChangeText={setBusca} placeholder="Buscar chave, nome ou responsável..." />
+            <FilterChips chips={FILTROS} selected={filtro} onSelect={setFiltro} />
+          </View>
+        }
         refreshing={carregando}
         onRefresh={() => void carregarChaves()}
-        ListEmptyComponent={<Text style={styles.empty}>Nenhuma chave cadastrada.</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="key-remove" size={48} color={colors.muted} />
+            <Text style={styles.empty}>{busca || filtro !== "todas" ? "Nenhuma chave encontrada com esses filtros." : "Nenhuma chave cadastrada."}</Text>
+          </View>
+        }
       />
     </View>
   );
 }
 
-/** Estilos da tela de quadro de chaves */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f3f4f6",
-  },
-  offlineBanner: {
-    backgroundColor: "#fbbf24",
-    padding: 10,
-    alignItems: "center",
-  },
-  offlineText: {
-    color: "#78350f",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  list: {
-    padding: 16,
-    gap: 12,
-  },
-  empty: { textAlign: "center", color: "#6b7280", marginTop: 32 },
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 8,
-    gap: 8,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  codigo: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-  responsavel: {
-    fontSize: 14,
-    color: "#374151",
-  },
-  actions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  button: {
-    flex: 1,
-    minWidth: 80,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  primaryButton: {
-    backgroundColor: "#16a34a",
-  },
-  secondaryButton: {
-    backgroundColor: "#dc2626",
-  },
-  disabledButton: {
-    backgroundColor: "#d1d5db",
-  },
-  buttonText: {
-    color: "#6b7280",
-    fontWeight: "bold",
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  secondaryButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  ghostButton: {
-    backgroundColor: "#e5e7eb",
-  },
-  ghostButtonText: {
-    color: "#111827",
-    fontWeight: "bold",
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  offlineBanner: { backgroundColor: "#fbbf24", padding: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+  offlineText: { color: "#78350f", fontWeight: "bold", fontSize: 14 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  list: { padding: 16, gap: 12, width: "100%", maxWidth: 900, alignSelf: "center" },
+  listHeader: { gap: 12, marginBottom: 8 },
+  hero: { paddingVertical: 4, gap: 2 },
+  heroEyebrow: { color: colors.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.3 },
+  heroTitle: { color: colors.text, fontSize: 27, fontWeight: "800" },
+  counters: { flexDirection: "row", gap: 8 },
+  counterCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderLeftWidth: 4, ...shadows.card },
+  counterValue: { fontSize: 24, fontWeight: "900" },
+  counterLabel: { fontSize: 11, color: colors.muted, fontWeight: "600" },
+  emptyContainer: { alignItems: "center", marginTop: 40, gap: 12 },
+  empty: { textAlign: "center", color: colors.muted },
+  card: { borderRadius: 18, padding: 18, borderWidth: 1, gap: 10, ...shadows.card },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  headerLeft: { flexDirection: "row", alignItems: "flex-start", gap: 10, flex: 1 },
+  keyIcon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  codigo: { fontSize: 21, fontWeight: "800", color: "#111827" },
+  nomeChave: { fontSize: 15, fontWeight: "600", color: "#374151", marginTop: 1 },
+  descricaoChave: { fontSize: 13, color: "#6b7280", marginTop: 1 },
+  badge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  badgeText: { fontSize: 12, fontWeight: "bold", color: "#fff" },
+  responsavelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  responsavel: { fontSize: 14, color: "#374151" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  button: { flex: 1, minWidth: 80, paddingVertical: 10, borderRadius: 11, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 4 },
+  primaryButton: { backgroundColor: "#16a34a" },
+  secondaryButton: { backgroundColor: "#dc2626" },
+  disabledButton: { backgroundColor: "#d1d5db" },
+  buttonText: { color: "#6b7280", fontWeight: "bold", fontSize: 13 },
+  primaryButtonText: { color: "#fff" },
+  secondaryButtonText: { color: "#fff" },
+  ghostButton: { backgroundColor: "#e5e7eb" },
+  ghostButtonText: { color: "#111827", fontWeight: "bold", fontSize: 13 },
 });

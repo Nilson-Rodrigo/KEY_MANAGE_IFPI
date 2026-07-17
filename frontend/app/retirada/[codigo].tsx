@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { View, Text, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { RegistroMovimentacaoRequestSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
 import { api } from "../../src/services/api";
 import { storage } from "../../src/services/storage";
 import { useApp } from "../../src/context/AppContext";
+import { AppButton } from "../../src/presentation/components/AppButton";
+import { MovementCard } from "../../src/presentation/components/MovementCard";
+import { colors } from "../../src/presentation/theme";
 
 export default function RetiradaScreen(): React.ReactNode {
   const params = useLocalSearchParams<{ codigo: string }>();
@@ -46,15 +49,11 @@ export default function RetiradaScreen(): React.ReactNode {
   };
 
   if (!codigo) {
-    return <View style={styles.container}><Text style={styles.title}>Código de chave inválido.</Text><Button title="Voltar" onPress={() => router.back()} /></View>;
+    return <View style={styles.container}><Text style={styles.title}>Código de chave inválido.</Text><AppButton label="Voltar" onPress={() => router.back()} /></View>;
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Retirada — {codigo}</Text>
-      <View style={styles.operador}><Text style={styles.operadorLabel}>Operador autenticado</Text><Text>{nomeGuarda}</Text><Text>Matrícula: {matriculaGuarda}</Text></View>
-      <Button title={enviando ? "Registrando..." : "Registrar retirada"} onPress={handleRetirada} disabled={enviando} />
-    </View>
+    <MovementCard kind="retirada" codigo={codigo} nome={nomeGuarda} matricula={matriculaGuarda} loading={enviando} onConfirm={() => void handleRetirada()} />
   );
 }
 
@@ -63,7 +62,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     gap: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
