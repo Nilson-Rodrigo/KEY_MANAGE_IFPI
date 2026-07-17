@@ -20,6 +20,7 @@ export const ChaveSchema = z.object({
     })
     .nullable(),
   ultimaMovimentacaoEm: z.string().datetime({ offset: true }).nullable(),
+  arquivada: z.boolean().default(false),
 });
 
 export type Chave = z.infer<typeof ChaveSchema>;

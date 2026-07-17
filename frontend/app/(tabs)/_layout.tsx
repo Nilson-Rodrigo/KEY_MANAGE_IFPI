@@ -32,6 +32,13 @@ export default function TabLayout(): React.ReactNode {
         }}
       />
       <Tabs.Screen
+        name="pendencias"
+        options={{
+          title: "Pendências",
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="cloud-sync" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="painel"
         options={{
           title: "Admin",

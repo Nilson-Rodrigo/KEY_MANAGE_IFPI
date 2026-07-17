@@ -15,4 +15,4 @@ Este diretório reúne os artefatos existentes e vigentes do projeto CoreTech.
 
 ## Arquitetura vigente
 
-A decisão vigente é a ADR-0015: aplicativo Expo autenticado anonimamente → Firestore direto, com cache e fila manual em AsyncStorage. O Firebase Hosting publica somente o frontend web.
+A decisão vigente é a ADR-0015: aplicativo Expo autenticado por e-mail/senha (administrador) ou matrícula/PIN sobre e-mail técnico (guarda) → Firestore direto, com cache e fila manual em AsyncStorage. O Firebase Hosting publica somente o frontend web.

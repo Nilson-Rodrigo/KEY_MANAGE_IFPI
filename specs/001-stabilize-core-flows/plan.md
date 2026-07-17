@@ -1,5 +1,7 @@
 # Implementation Plan: Stabilize Core Flows
 
+> **Status: historical/superseded.** Do not execute the backend paths in this plan. The canonical architecture is Expo Router, Firebase Authentication, direct Firestore access, AsyncStorage, Security Rules, and Firebase Hosting.
+
 **Branch**: `main` | **Date**: 2026-07-16 | **Spec**: [spec.md](spec.md)
 
 ## Summary

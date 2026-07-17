@@ -6,6 +6,7 @@ import {
   inMemoryPersistence,
   initializeAuth,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   type Auth,
@@ -13,6 +14,7 @@ import {
 } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, orderBy, query, serverTimestamp, writeBatch } from "firebase/firestore";
 import { firebaseConfig, firebaseServices } from "./firebase";
+import { registrarAuditoria } from "./audit";
 
 export type Perfil = "admin" | "guarda";
 export type Usuario = { uid: string; nome: string; matricula: string; perfil: Perfil; ativo: boolean };
@@ -76,6 +78,12 @@ export function sair(): Promise<void> {
   return signOut(firebaseServices().auth);
 }
 
+export async function recuperarSenhaAdministrador(email: string): Promise<void> {
+  const normalizado = email.trim().toLowerCase();
+  if (!normalizado.includes("@")) throw new Error("Informe um e-mail válido.");
+  await sendPasswordResetEmail(firebaseServices().auth, normalizado);
+}
+
 export function observarAutenticacao(callback: (user: User | null) => void): () => void {
   return onAuthStateChanged(firebaseServices().auth, callback);
 }
@@ -129,6 +137,7 @@ export async function cadastrarGuarda(nome: string, matricula: string, pin: stri
       atualizadoEm: serverTimestamp(),
     });
     await batch.commit();
+    await registrarAuditoria("guarda.cadastrado", perfil.uid, `${perfil.nome} (${perfil.matricula})`);
     return perfil;
   } catch (error) {
     await deleteUser(credencial.user).catch(() => undefined);
@@ -145,55 +154,23 @@ export async function alterarStatusGuarda(guarda: Usuario, ativo: boolean): Prom
   batch.update(doc(db, "usuarios", guarda.uid), { ativo, atualizadoEm: serverTimestamp() });
   batch.update(doc(db, "acessos", guarda.matricula), { ativo, atualizadoEm: serverTimestamp() });
   await batch.commit();
+  await registrarAuditoria(ativo ? "guarda.reativado" : "guarda.bloqueado", guarda.uid, `${guarda.nome} (${guarda.matricula})`);
   return { ...guarda, ativo };
 }
 
-export async function apagarGuarda(guarda: Usuario): Promise<void> {
-  const { db } = firebaseServices();
-  const batch = writeBatch(db);
-  batch.delete(doc(db, "usuarios", guarda.uid));
-  batch.delete(doc(db, "acessos", guarda.matricula));
-  await batch.commit();
-}
-
-export async function editarGuarda(guarda: Usuario, novoNome: string, novaMatricula: string): Promise<Usuario> {
+export async function editarNomeGuarda(guarda: Usuario, novoNome: string): Promise<Usuario> {
   const nomeLimpo = novoNome.trim();
-  const matriculaNormalizada = normalizarMatricula(novaMatricula);
-  
-  if (nomeLimpo.length < 2 || !matriculaNormalizada) {
-    throw new Error("Informe nome e matrícula válidos.");
+  if (nomeLimpo.length < 2) {
+    throw new Error("Informe um nome válido.");
   }
 
   const { db } = firebaseServices();
-  const acessoNovoRef = doc(db, "acessos", matriculaNormalizada);
-  
-  if (guarda.matricula !== matriculaNormalizada) {
-    if ((await getDoc(acessoNovoRef)).exists()) {
-      throw new Error("Esta nova matrícula já está cadastrada.");
-    }
-  }
-
   const batch = writeBatch(db);
-  const usuarioRef = doc(db, "usuarios", guarda.uid);
-  
-  batch.update(usuarioRef, { 
-    nome: nomeLimpo, 
-    matricula: matriculaNormalizada, 
-    atualizadoEm: serverTimestamp() 
+  batch.update(doc(db, "usuarios", guarda.uid), {
+    nome: nomeLimpo,
+    atualizadoEm: serverTimestamp(),
   });
-
-  if (guarda.matricula !== matriculaNormalizada) {
-    const acessoAntigoRef = doc(db, "acessos", guarda.matricula);
-    const acessoAntigoSnap = await getDoc(acessoAntigoRef);
-    if (acessoAntigoSnap.exists()) {
-      batch.set(acessoNovoRef, {
-        ...acessoAntigoSnap.data(),
-        atualizadoEm: serverTimestamp()
-      });
-      batch.delete(acessoAntigoRef);
-    }
-  }
-
   await batch.commit();
-  return { ...guarda, nome: nomeLimpo, matricula: matriculaNormalizada };
+  await registrarAuditoria("guarda.nome_editado", guarda.uid, `${guarda.nome} → ${nomeLimpo}`);
+  return { ...guarda, nome: nomeLimpo };
 }

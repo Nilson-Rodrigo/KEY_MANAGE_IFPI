@@ -1,6 +1,6 @@
 # ADR 0008 — Arquitetura Macro: Monolito Modular + Clean Architecture + Vertical Slices + MVVM
 
-- **Status:** Aceito
+- **Status:** Substituído pela ADR-0013
 - **Data:** 2026-05-28
 - **Autor:** CoreTech
 

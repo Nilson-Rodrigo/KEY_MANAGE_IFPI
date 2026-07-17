@@ -27,6 +27,9 @@ jobs:
       - name: Compilar tooling administrativo
         run: npm run build
 
+      - name: Validar regras de segurança no emulador
+        run: npm run rules:check
+
   verify-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -49,3 +52,7 @@ jobs:
       - name: Build web do frontend
         working-directory: frontend
         run: npm run build
+
+      - name: Validar projeto Expo
+        working-directory: frontend
+        run: npx expo-doctor

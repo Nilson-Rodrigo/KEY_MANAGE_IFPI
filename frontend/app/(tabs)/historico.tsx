@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ComponentProps } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -19,6 +19,7 @@ type Movimentacao = {
 };
 
 type SectionItem = { type: "header"; title: string } | { type: "item"; data: Movimentacao };
+type IconName = ComponentProps<typeof MaterialCommunityIcons>["name"];
 
 function labelData(dateStr: string): string {
   const date = new Date(dateStr);
@@ -88,7 +89,7 @@ export default function HistoricoScreen(): React.ReactNode {
 
     const mov = item.data;
     const isRetirada = mov.tipo === "retirada";
-    const syncIcon = mov.syncStatus === "sincronizado" ? "cloud-check" : mov.syncStatus === "pendente" ? "clock-outline" : "alert-circle";
+    const syncIcon: IconName = mov.syncStatus === "sincronizado" ? "cloud-check" : mov.syncStatus === "pendente" ? "clock-outline" : "alert-circle";
     const syncColor = mov.syncStatus === "sincronizado" ? colors.success : mov.syncStatus === "pendente" ? colors.warning : colors.danger;
 
     return (
@@ -98,7 +99,7 @@ export default function HistoricoScreen(): React.ReactNode {
             <MaterialCommunityIcons name={isRetirada ? "arrow-up-circle" : "arrow-down-circle"} size={16} color={isRetirada ? colors.danger : colors.success} />
             <Text style={[styles.tipoText, { color: isRetirada ? colors.danger : colors.success }]}>{isRetirada ? "Retirada" : "Devolução"}</Text>
           </View>
-          <MaterialCommunityIcons name={syncIcon as any} size={16} color={syncColor} />
+          <MaterialCommunityIcons name={syncIcon} size={16} color={syncColor} />
         </View>
 
         <View style={styles.cardBody}>
@@ -131,7 +132,7 @@ export default function HistoricoScreen(): React.ReactNode {
     <View style={styles.container}>
       <FlatList
         data={sections}
-        keyExtractor={(item, i) => item.type === "header" ? `h-${item.title}` : `i-${item.data.id}`}
+        keyExtractor={(item) => item.type === "header" ? `h-${item.title}` : `i-${item.data.id}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         ListHeaderComponent={

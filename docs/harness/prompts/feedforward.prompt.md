@@ -17,7 +17,7 @@ SCHEMA ZOD
 DECISÕES ARQUITETURAIS
 - ADR aplicável: [arquivo]
 - Arquitetura de implantação vigente: ADR-0015
-- O app usa Firebase Auth anônima antes de acessar dados remotos.
+- O app usa Firebase Auth por e-mail/senha e perfis ativos antes de acessar dados remotos.
 - Toda persistência remota usa transações diretas no Firestore.
 - Operações offline usam cache/fila manual no AsyncStorage e sincronizam no Firestore.
 

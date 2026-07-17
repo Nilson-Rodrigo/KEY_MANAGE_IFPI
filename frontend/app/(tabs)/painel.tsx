@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, StyleSheet, Animated, Pressable, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Animated, Platform, Pressable, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { colors, shadows } from "../../src/presentation/theme";
@@ -14,13 +14,13 @@ function AnimatedCard({ children, onPress, delay = 0 }: { children: React.ReactN
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, delay, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 400, delay, useNativeDriver: Platform.OS !== "web" }),
     ]).start();
   }, []);
 
-  const onPressIn = () => Animated.spring(scale, { toValue: 0.96, useNativeDriver: true }).start();
-  const onPressOut = () => Animated.spring(scale, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+  const onPressIn = (): void => Animated.spring(scale, { toValue: 0.96, useNativeDriver: Platform.OS !== "web" }).start();
+  const onPressOut = (): void => Animated.spring(scale, { toValue: 1, friction: 3, useNativeDriver: Platform.OS !== "web" }).start();
 
   return (
     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }, { scale }] }}>
@@ -107,6 +107,11 @@ export default function AdminScreen(): React.ReactNode {
           <Text style={styles.cardTitle}>Gerenciar Chaves</Text>
           <Text style={styles.cardDesc}>Cadastrar, editar ou remover chaves do quadro</Text>
           {totalChaves !== null && <Text style={styles.cardBadge}>{totalChaves} cadastradas</Text>}
+        </AnimatedCard>
+        <AnimatedCard onPress={() => router.push("/admin/auditoria")} delay={300}>
+          <View style={[styles.iconContainer, { backgroundColor: colors.brandSoft }]}><MaterialCommunityIcons name="clipboard-text-clock" size={32} color={colors.brand} /></View>
+          <Text style={styles.cardTitle}>Auditoria</Text>
+          <Text style={styles.cardDesc}>Consultar as últimas ações administrativas</Text>
         </AnimatedCard>
       </View>
     </View>

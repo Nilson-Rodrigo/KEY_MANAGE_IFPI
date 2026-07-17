@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useApp } from "../src/context/AppContext";
 import { AppButton } from "../src/presentation/components/AppButton";
 import { colors, shadows } from "../src/presentation/theme";
+import { recuperarSenhaAdministrador } from "../src/services/auth";
 
 export default function AdminLoginScreen(): React.ReactElement {
   const router = useRouter();
@@ -26,6 +27,16 @@ export default function AdminLoginScreen(): React.ReactElement {
       Alert.alert("Acesso negado", e instanceof Error ? e.message : "Credenciais inválidas.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const recuperarSenha = async (): Promise<void> => {
+    if (!email.trim()) { Alert.alert("Recuperação", "Informe primeiro o e-mail administrativo."); return; }
+    try {
+      await recuperarSenhaAdministrador(email);
+      Alert.alert("E-mail enviado", "Se a conta existir, o Firebase enviará as instruções de redefinição.");
+    } catch {
+      Alert.alert("Recuperação", "Não foi possível solicitar a redefinição agora.");
     }
   };
 
@@ -59,6 +70,7 @@ export default function AdminLoginScreen(): React.ReactElement {
         />
         
         <AppButton label="Entrar como administrador" onPress={() => void login()} loading={busy} />
+        <Pressable onPress={() => void recuperarSenha()}><Text style={s.link}>Esqueci minha senha</Text></Pressable>
         
         <Pressable onPress={() => router.replace("/identificacao")}>
           <Text style={s.link}>Voltar ao acesso do guarda</Text>

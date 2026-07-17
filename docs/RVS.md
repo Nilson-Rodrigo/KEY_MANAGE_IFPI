@@ -1,5 +1,7 @@
 # Relatório de Viabilidade de Software (RVS)
 
+> **Documento histórico de viabilidade.** As referências abaixo a Express, PostgreSQL, SQLite e autenticação anônima não descrevem a aplicação entregue. A arquitetura canônica atual está no `README.md`, no `docs/ADENDO_MIGRACAO_FIREBASE.md` e na ADR-0015.
+
 ## Sistema de Gerenciamento de Acesso a Chaves de Salas e Laboratórios
 
 | Informação            | Descrição                                    |
@@ -21,7 +23,7 @@
 
 ---
 
-> **Nota de atualização:** este documento reflete a análise de viabilidade original, concluída em Abril de 2026. A persistência atual usa Firestore direto após autenticação anônima, com offline manual no AsyncStorage. Ver `docs/ADENDO_MIGRACAO_FIREBASE.md`, ADR-0010 e ADR-0015.
+> **Nota de atualização:** este documento reflete a análise de viabilidade original, concluída em abril de 2026. A persistência atual usa Firestore direto após autenticação por e-mail/senha e perfis, com offline manual no AsyncStorage. Ver `docs/ADENDO_MIGRACAO_FIREBASE.md`, ADR-0010 e ADR-0015.
 
 ## 1. Contexto e Problema Identificado
 

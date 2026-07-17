@@ -189,7 +189,7 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 | Camada | Tecnologia | ADR de referência |
 |--------|-----------|-------------------|
 | Frontend mobile | React Native + Expo + TypeScript | ADR-0003 (original), mantido |
-| Identidade técnica | Firebase Authentication anônima | ADR-0015 |
+| Identidade técnica | Firebase Authentication por e-mail/senha e perfis admin/guarda | ADR-0015 |
 | Banco de dados central | Firebase Cloud Firestore | ADR-0010 |
 | Cache local / Offline | AsyncStorage + fila manual de sincronização | ADR-0015 |
 | Hospedagem | Firebase Hosting (export web estático) | ADR-0015 |
@@ -209,7 +209,7 @@ O produto resolve um problema específico e real do IFPI Campus Piripiri. A solu
 - **ADR-0009:** Strategy pattern para regras de retirada/devolução; Observer para efeitos colaterais de sincronização.
 - **ADR-0010:** Substituição de PostgreSQL por Firebase Firestore.
 - **ADR-0011 a ADR-0014:** decisões históricas superseded pela ADR-0015.
-- **ADR-0015:** Expo → Auth anônima → Firestore direto, com Hosting estático e offline manual.
+- **ADR-0015:** Expo → Auth por e-mail/senha e perfis → Firestore direto, com Hosting estático e offline manual.
 
 ---
 

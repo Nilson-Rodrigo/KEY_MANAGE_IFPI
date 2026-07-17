@@ -1,6 +1,6 @@
 # ADR 0005 — Estratégia de Hospedagem e Infraestrutura
 
-- **Status:** Aceito
+- **Status:** Substituído pela ADR-0011
 - **Data:** 2026-05-28
 - **Autor:** CoreTech
 

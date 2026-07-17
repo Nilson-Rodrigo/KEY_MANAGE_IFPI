@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
-import { colors } from "../theme";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
 
 type ToastType = "success" | "error" | "info" | "warning";
 type ToastMessage = { id: number; text: string; type: ToastType };
@@ -20,16 +19,16 @@ function ToastItem({ msg, onDone }: { msg: ToastMessage; onDone: () => void }): 
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-      Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 250, useNativeDriver: Platform.OS !== "web" }),
+      Animated.timing(translateY, { toValue: 0, duration: 250, useNativeDriver: Platform.OS !== "web" }),
     ]).start();
     const timer = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-        Animated.timing(translateY, { toValue: -30, duration: 300, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== "web" }),
+        Animated.timing(translateY, { toValue: -30, duration: 300, useNativeDriver: Platform.OS !== "web" }),
       ]).start(onDone);
     }, 2800);
-    return () => clearTimeout(timer);
+    return (): void => clearTimeout(timer);
   }, []);
 
   return (
@@ -44,17 +43,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }): Reac
   const [messages, setMessages] = useState<ToastMessage[]>([]);
   const counter = useRef(0);
 
-  const show = useCallback((text: string, type: ToastType = "success") => {
+  const show = useCallback((text: string, type: ToastType = "success"): void => {
     const id = ++counter.current;
     setMessages((prev) => [...prev.slice(-2), { id, text, type }]);
   }, []);
 
   useEffect(() => {
     globalShow = show;
-    return () => { globalShow = null; };
+    return (): void => { globalShow = null; };
   }, [show]);
 
-  const remove = useCallback((id: number) => {
+  const remove = useCallback((id: number): void => {
     setMessages((prev) => prev.filter((m) => m.id !== id));
   }, []);
 

@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp, type FirebaseOptions } from "firebase/app";
-import { getAuth, type Auth } from "firebase/auth";
+import type { Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { authForApp } from "./firebaseAuth";
 
 export function firebaseConfig(): FirebaseOptions {
   const config = {
@@ -23,6 +24,6 @@ let services: { app: FirebaseApp; auth: Auth; db: Firestore } | undefined;
 export function firebaseServices(): { app: FirebaseApp; auth: Auth; db: Firestore } {
   if (services) return services;
   const app: FirebaseApp = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig());
-  services = { app, auth: getAuth(app), db: getFirestore(app) };
+  services = { app, auth: authForApp(app), db: getFirestore(app) };
   return services;
 }

@@ -10,6 +10,7 @@ service cloud.firestore {
     function guard() { return active() && profile().perfil == 'guarda'; }
     function validPerson(person) { return person is map && person.keys().hasOnly(['nome', 'matricula']) && person.nome == profile().nome && person.matricula == profile().matricula; }
     function validUser(data, uid) { return data.keys().hasOnly(['uid', 'nome', 'matricula', 'perfil', 'ativo', 'criadoEm', 'atualizadoEm']) && data.uid == uid && data.nome is string && data.nome.size() >= 2 && data.nome.size() <= 120 && data.matricula is string && data.matricula.size() >= 1 && data.matricula.size() <= 40 && data.perfil in ['admin', 'guarda'] && data.ativo is bool; }
+    function validKey(data) { return data.keys().hasOnly(['codigo', 'nome', 'descricao', 'status', 'responsavelAtual', 'ultimaMovimentacaoEm', 'ultimaMovimentacaoId', 'arquivada']) && data.codigo is string && data.codigo.size() >= 2 && data.codigo.size() <= 40 && data.status in ['disponivel', 'em_uso'] && data.arquivada is bool; }
     function validMovement(data, movementId) { return guard() && data.keys().hasOnly(['id', 'chaveCodigo', 'tipo', 'responsavel', 'timestampLocal', 'deviceId', 'syncStatus', 'autorUid', 'chaveId']) && data.id == movementId && data.chaveCodigo is string && data.tipo in ['retirada', 'devolucao'] && validPerson(data.responsavel) && data.timestampLocal is timestamp && data.timestampLocal <= request.time + duration.value(5, 'm') && data.deviceId is string && data.deviceId.size() >= 1 && data.deviceId.size() <= 200 && data.syncStatus == 'sincronizado' && data.autorUid == request.auth.uid && data.chaveId is string; }
 
     match /usuarios/{uid} {
@@ -26,9 +27,9 @@ service cloud.firestore {
     }
     match /chaves/{keyId} {
       allow read: if active();
-      allow create: if admin() && request.resource.data.keys().hasOnly(['codigo', 'nome', 'descricao', 'status', 'responsavelAtual', 'ultimaMovimentacaoEm']) && request.resource.data.codigo is string && request.resource.data.codigo.size() >= 2 && request.resource.data.codigo.size() <= 40 && (!request.resource.data.keys().hasAny(['nome']) || request.resource.data.nome is string) && (!request.resource.data.keys().hasAny(['descricao']) || request.resource.data.descricao is string) && request.resource.data.status == 'disponivel' && request.resource.data.responsavelAtual == null && request.resource.data.ultimaMovimentacaoEm == null;
-      allow delete: if admin();
-      allow update: if admin() || (guard() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'responsavelAtual', 'ultimaMovimentacaoEm', 'ultimaMovimentacaoId']) && request.resource.data.codigo == resource.data.codigo && request.resource.data.ultimaMovimentacaoEm is timestamp && request.resource.data.ultimaMovimentacaoId is string && ((resource.data.status == 'disponivel' && request.resource.data.status == 'em_uso' && validPerson(request.resource.data.responsavelAtual)) || (resource.data.status == 'em_uso' && request.resource.data.status == 'disponivel' && request.resource.data.responsavelAtual == null)) && getAfter(/databases/$(database)/documents/movimentacoes/$(request.resource.data.ultimaMovimentacaoId)).data.autorUid == request.auth.uid);
+      allow create: if admin() && validKey(request.resource.data) && request.resource.data.status == 'disponivel' && request.resource.data.responsavelAtual == null && request.resource.data.ultimaMovimentacaoEm == null && request.resource.data.arquivada == false;
+      allow delete: if false;
+      allow update: if (admin() && validKey(request.resource.data)) || (guard() && (!resource.data.keys().hasAny(['arquivada']) || resource.data.arquivada == false) && (!request.resource.data.keys().hasAny(['arquivada']) || request.resource.data.arquivada == false) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'responsavelAtual', 'ultimaMovimentacaoEm', 'ultimaMovimentacaoId']) && request.resource.data.codigo == resource.data.codigo && request.resource.data.ultimaMovimentacaoEm is timestamp && request.resource.data.ultimaMovimentacaoId is string && ((resource.data.status == 'disponivel' && request.resource.data.status == 'em_uso' && validPerson(request.resource.data.responsavelAtual)) || (resource.data.status == 'em_uso' && request.resource.data.status == 'disponivel' && request.resource.data.responsavelAtual == null)) && getAfter(/databases/$(database)/documents/movimentacoes/$(request.resource.data.ultimaMovimentacaoId)).data.autorUid == request.auth.uid);
     }
     match /movimentacoes/{movementId} {
       allow read: if active();
@@ -42,6 +43,11 @@ service cloud.firestore {
           || (request.resource.data.tipo == 'devolucao'
           && getAfter(/databases/$(database)/documents/chaves/$(request.resource.data.chaveId)).data.status == 'disponivel'
           && getAfter(/databases/$(database)/documents/chaves/$(request.resource.data.chaveId)).data.responsavelAtual == null));
+      allow update, delete: if false;
+    }
+    match /auditoria/{eventId} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.keys().hasOnly(['acao', 'alvo', 'detalhes', 'autorUid', 'criadoEm']) && request.resource.data.acao is string && request.resource.data.alvo is string && request.resource.data.detalhes is string && request.resource.data.autorUid == request.auth.uid && request.resource.data.criadoEm == request.time;
       allow update, delete: if false;
     }
     match /{document=**} { allow read, write: if false; }

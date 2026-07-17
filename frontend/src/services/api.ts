@@ -19,6 +19,7 @@ import { ChaveSchema, CodigoChaveSchema, MovimentacaoSchema } from "../specs/sch
 import { firebaseServices } from "./firebase";
 import { perfilAtual } from "./auth";
 import { storage } from "./storage";
+import { registrarAuditoria } from "./audit";
 
 export type MovimentacaoPayload = {
   responsavel: { nome: string; matricula: string };
@@ -32,6 +33,7 @@ export type Chave = {
   status: "disponivel" | "em_uso";
   responsavelAtual: { nome: string; matricula: string } | null;
   ultimaMovimentacaoEm: string | null;
+  arquivada?: boolean;
 };
 export type Movimentacao = {
   id: string;
@@ -85,6 +87,7 @@ function mapearChave(
     status: dados.status,
     responsavelAtual: dados.responsavelAtual ?? null,
     ultimaMovimentacaoEm: paraIso(dados.ultimaMovimentacaoEm),
+    arquivada: dados.arquivada ?? false,
   });
 }
 
@@ -247,7 +250,7 @@ export const api = {
     try {
       const { db } = await bancoAutenticado();
       const snapshot = await getDocs(collection(db, "chaves"));
-      const chaves = snapshot.docs.map((item) => mapearChave(item)).sort((a, b) => a.codigo.localeCompare(b.codigo));
+      const chaves = snapshot.docs.map((item) => mapearChave(item)).filter((item) => !item.arquivada).sort((a, b) => a.codigo.localeCompare(b.codigo));
       await storage.salvarChavesCache(chaves);
       return chaves;
     } catch (error) {
@@ -274,9 +277,11 @@ export const api = {
       status: "disponivel",
       responsavelAtual: null,
       ultimaMovimentacaoEm: null,
+      arquivada: false,
     };
     const { setDoc } = await import("firebase/firestore");
     await setDoc(chaveRef, novaChave);
+    await registrarAuditoria("chave.cadastrada", codigoNormalizado, nome?.trim() ?? codigoNormalizado);
     return novaChave;
   },
 
@@ -291,8 +296,9 @@ export const api = {
       throw criarErro("CHAVE_EM_USO", "Não é possível apagar uma chave que está em uso.", 409);
     }
     
-    const { deleteDoc } = await import("firebase/firestore");
-    await deleteDoc(chaveRef);
+    const { updateDoc } = await import("firebase/firestore");
+    await updateDoc(chaveRef, { arquivada: true });
+    await registrarAuditoria("chave.arquivada", codigo, chave.nome ?? codigo);
   },
 
   async editarChave(codigoAntigo: string, novoCodigo: string, novoNome?: string, novaDescricao?: string): Promise<Chave> {
@@ -300,6 +306,9 @@ export const api = {
     const resultadoCodigo = CodigoChaveSchema.safeParse(novoCodigo);
     if (!resultadoCodigo.success) throw criarErro("CODIGO_INVALIDO", resultadoCodigo.error.issues[0]?.message ?? "Código inválido.", 400);
     const codigoNormalizado = resultadoCodigo.data;
+    if (codigoAntigo !== codigoNormalizado) {
+      throw criarErro("CODIGO_IMUTAVEL", "O código identifica o histórico da chave e não pode ser alterado.", 409);
+    }
 
     const chaveAntigaRef = await resolverChave(db, codigoAntigo);
     const snapshotAntiga = await getDoc(chaveAntigaRef);
@@ -321,25 +330,12 @@ export const api = {
       status: novaChave.status,
       responsavelAtual: novaChave.responsavelAtual,
       ultimaMovimentacaoEm: novaChave.ultimaMovimentacaoEm,
+      arquivada: novaChave.arquivada ?? false,
     };
 
-    if (codigoAntigo === codigoNormalizado) {
-      const { setDoc } = await import("firebase/firestore");
-      await setDoc(chaveAntigaRef, dadosNovaChave);
-      return novaChave;
-    }
-
-    const novaChaveRef = doc(db, "chaves", encodeURIComponent(codigoNormalizado));
-    const snapshotNova = await getDoc(novaChaveRef);
-    if (snapshotNova.exists()) {
-      throw criarErro("CHAVE_JA_EXISTE", `A chave ${codigoNormalizado} já está cadastrada.`, 409);
-    }
-
-    const { writeBatch } = await import("firebase/firestore");
-    const batch = writeBatch(db);
-    batch.set(novaChaveRef, dadosNovaChave);
-    batch.delete(chaveAntigaRef);
-    await batch.commit();
+    const { setDoc } = await import("firebase/firestore");
+    await setDoc(chaveAntigaRef, dadosNovaChave);
+    await registrarAuditoria("chave.editada", codigoNormalizado, novoNome?.trim() ?? codigoNormalizado);
     return novaChave;
   },
 
@@ -403,7 +399,7 @@ export const api = {
       return { sincronizadas: 0, falhas: 0, conflitos: 0 };
     }
     const pendentes = (await storage.buscarMovimentacoesPendentes())
-      .filter((item) => !item.error)
+      .filter((item) => !item.error && (!item.proximaTentativaEm || item.proximaTentativaEm <= new Date().toISOString()))
       .sort((a, b) => {
         const porData = a.payload.timestampLocal.localeCompare(b.payload.timestampLocal);
         return porData === 0 ? a.id.localeCompare(b.id) : porData;
@@ -435,6 +431,7 @@ export const api = {
           }
         } catch (error) {
           console.error(`Falha ao sincronizar ${pendencia.id}:`, error);
+          await storage.agendarNovaTentativa(pendencia.id);
         }
       }
       await storage.removerMovimentacoesPendentes(concluidos);

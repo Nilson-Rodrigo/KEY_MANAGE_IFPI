@@ -1,6 +1,6 @@
 # ADR 0003 — Definição da Stack Tecnológica do MVP
 
-- **Status:** Aceito
+- **Status:** Substituído pelas ADR-0010, ADR-0011, ADR-0012 e ADR-0015
 - **Data:** 2026-05-28
 - **Autor:** CoreTech
 

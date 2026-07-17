@@ -18,7 +18,7 @@ O template operacional está em `docs/harness/prompts/feedforward.prompt.md`.
 
 O pipeline executa `lint → typecheck → testes → export web`.
 
-- tooling administrativo: `npm run verify` e `npm run build`;
+- tooling administrativo e regras: `npm run verify`, `npm run build` e `npm run rules:check`;
 - aplicativo: `npm --prefix frontend run verify` e `npm --prefix frontend run build`;
 - CI: `.github/workflows/ci.yml` em pushes e pull requests para `main`.
 
@@ -34,6 +34,6 @@ O pipeline executa `lint → typecheck → testes → export web`.
 
 ## Limitações
 
-- autenticação anônima não comprova a identidade humana do guarda;
+- o e-mail técnico do guarda é derivado da matrícula e não deve ser exposto na interface;
 - testes de Security Rules no Emulator Suite devem acompanhar novos shapes;
 - conflitos offline entre dispositivos continuam sujeitos à política RN07.

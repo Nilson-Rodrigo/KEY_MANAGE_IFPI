@@ -22,15 +22,15 @@ export function AppProvider({ children }: { children: React.ReactNode }): React.
   useEffect(() => {
     return observarAutenticacao((firebaseUser) => { void (async (): Promise<void> => {
       if (!firebaseUser) { setUsuario(null); setCarregandoSessao(false); return; }
-      try { const perfil = await perfilAtual(firebaseUser); if (perfil?.ativo) { setUsuario(perfil); if (perfil.perfil === "guarda") await sessionStorage.salvar(perfil.nome, perfil.matricula); } else setUsuario(null); }
-      catch { const cache = await sessionStorage.ler(); if (cache) setUsuario({ uid: firebaseUser.uid, nome: cache.nome, matricula: cache.matricula, perfil: "guarda", ativo: true }); }
+      try { const perfil = await perfilAtual(firebaseUser); if (perfil?.ativo) { setUsuario(perfil); if (perfil.perfil === "guarda") await sessionStorage.salvar(perfil.uid, perfil.nome, perfil.matricula); } else { await sessionStorage.limpar(); setUsuario(null); } }
+      catch { const cache = await sessionStorage.ler(); if (cache?.uid === firebaseUser.uid) setUsuario({ uid: firebaseUser.uid, nome: cache.nome, matricula: cache.matricula, perfil: "guarda", ativo: true }); else setUsuario(null); }
       finally { setCarregandoSessao(false); }
     })(); });
   }, []);
 
   const entrarComoGuarda = useCallback(async (matricula: string, pin: string): Promise<Usuario> => {
     const perfil = await entrarGuarda(matricula, pin); setUsuario(perfil);
-    await sessionStorage.salvar(perfil.nome, perfil.matricula); return perfil;
+    await sessionStorage.salvar(perfil.uid, perfil.nome, perfil.matricula); return perfil;
   }, []);
   const entrarComoAdmin = useCallback(async (email: string, senha: string): Promise<Usuario> => { const perfil = await entrarAdministrador(email, senha); setUsuario(perfil); return perfil; }, []);
 

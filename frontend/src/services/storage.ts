@@ -16,6 +16,8 @@ export type MovimentacaoPending = {
     deviceId: string;
   };
   error?: string;
+  tentativas?: number;
+  proximaTentativaEm?: string;
 };
 
 type ChaveCache = {
@@ -23,6 +25,7 @@ type ChaveCache = {
   status: "disponivel" | "em_uso";
   responsavelAtual: { nome: string; matricula: string } | null;
   ultimaMovimentacaoEm: string | null;
+  arquivada?: boolean;
 };
 
 let filaDeEscrita: Promise<void> = Promise.resolve();
@@ -58,6 +61,8 @@ function normalizarPendencia(item: Partial<MovimentacaoPending>): MovimentacaoPe
     tipo: item.tipo,
     payload: item.payload,
     error: item.error,
+    tentativas: item.tentativas ?? 0,
+    proximaTentativaEm: item.proximaTentativaEm,
   };
 }
 
@@ -176,6 +181,29 @@ export const storage = {
       const atualizados = pendentes.map(item => 
         item.id === id ? { ...item, error } : item
       );
+      await AsyncStorage.setItem(MOVIMENTACOES_PENDING_KEY, JSON.stringify(atualizados));
+    });
+  },
+
+  async agendarNovaTentativa(id: string): Promise<void> {
+    await serializarEscrita(async () => {
+      const pendentes = await this.buscarMovimentacoesPendentes();
+      const atualizados = pendentes.map((item) => {
+        if (item.id !== id) return item;
+        const tentativas = (item.tentativas ?? 0) + 1;
+        const atraso = Math.min(5 * 60_000, 2 ** Math.min(tentativas, 8) * 1_000);
+        return { ...item, tentativas, proximaTentativaEm: new Date(Date.now() + atraso).toISOString() };
+      });
+      await AsyncStorage.setItem(MOVIMENTACOES_PENDING_KEY, JSON.stringify(atualizados));
+    });
+  },
+
+  async liberarMovimentacaoParaRetry(id: string): Promise<void> {
+    await serializarEscrita(async () => {
+      const pendentes = await this.buscarMovimentacoesPendentes();
+      const atualizados = pendentes.map((item) => item.id === id
+        ? { ...item, error: undefined, proximaTentativaEm: undefined }
+        : item);
       await AsyncStorage.setItem(MOVIMENTACOES_PENDING_KEY, JSON.stringify(atualizados));
     });
   },

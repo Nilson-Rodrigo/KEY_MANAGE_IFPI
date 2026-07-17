@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
+import { Alert, View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { api, type Chave } from "../../src/services/api";
 import { SearchBar } from "../../src/presentation/components/SearchBar";
 import { showToast } from "../../src/presentation/components/Toast";
 import { colors, shadows } from "../../src/presentation/theme";
+
+function mensagemErro(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 export default function GerenciarChavesScreen(): React.ReactNode {
   const [chaves, setChaves] = useState<Chave[]>([]);
@@ -21,7 +25,7 @@ export default function GerenciarChavesScreen(): React.ReactNode {
     try {
       const data = await api.listarChaves();
       setChaves(data);
-    } catch (error) {
+    } catch {
       showToast("Falha ao carregar chaves.", "error");
     } finally {
       setLoading(false);
@@ -36,7 +40,7 @@ export default function GerenciarChavesScreen(): React.ReactNode {
     return c.codigo.toLowerCase().includes(q) || (c.nome?.toLowerCase().includes(q) ?? false) || (c.descricao?.toLowerCase().includes(q) ?? false);
   });
 
-  const handleSalvar = async () => {
+  const handleSalvar = async (): Promise<void> => {
     if (!codigoInput.trim()) return;
     try {
       if (chaveEditando) {
@@ -48,25 +52,27 @@ export default function GerenciarChavesScreen(): React.ReactNode {
       }
       setModalVisible(false);
       void carregarChaves();
-    } catch (error: any) {
-      showToast(error.message || "Falha ao salvar a chave.", "error");
+    } catch (error: unknown) {
+      showToast(mensagemErro(error, "Falha ao salvar a chave."), "error");
     }
   };
 
-  const handleApagar = (codigo: string) => {
-    showToast("Apagando chave...", "info");
-    void (async () => {
+  const handleApagar = (codigo: string): void => {
+    Alert.alert("Arquivar chave?", `A chave ${codigo} deixará de aparecer no quadro, mas seu histórico será preservado.`, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Arquivar", style: "destructive", onPress: (): void => { void (async (): Promise<void> => {
       try {
         await api.apagarChave(codigo);
-        showToast("Chave apagada com sucesso!", "success");
+        showToast("Chave arquivada com sucesso!", "success");
         void carregarChaves();
-      } catch (error: any) {
-        showToast(error.message || "Falha ao apagar a chave.", "error");
+      } catch (error: unknown) {
+        showToast(mensagemErro(error, "Falha ao arquivar a chave."), "error");
       }
-    })();
+    })(); } },
+    ]);
   };
 
-  const renderItem = ({ item }: { item: Chave }) => {
+  const renderItem = ({ item }: { item: Chave }): React.ReactElement => {
     const disponivel = item.status === "disponivel";
     return (
       <View style={styles.card}>
@@ -85,8 +91,8 @@ export default function GerenciarChavesScreen(): React.ReactNode {
           <TouchableOpacity style={styles.iconBtn} onPress={() => {
             setChaveEditando(item);
             setCodigoInput(item.codigo);
-            setNomeInput(item.nome || "");
-            setDescricaoInput(item.descricao || "");
+            setNomeInput(item.nome ?? "");
+            setDescricaoInput(item.descricao ?? "");
             setModalVisible(true);
           }}>
             <MaterialCommunityIcons name="pencil" size={20} color={colors.brand} />
@@ -136,7 +142,8 @@ export default function GerenciarChavesScreen(): React.ReactNode {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{chaveEditando ? "Editar Chave" : "Nova Chave"}</Text>
-            <TextInput style={styles.input} placeholder="Código (ex.: Sala 2 ou A/S3) *" value={codigoInput} onChangeText={setCodigoInput} autoCapitalize="characters" />
+            <TextInput style={styles.input} placeholder="Código (ex.: Sala 2 ou A/S3) *" value={codigoInput} onChangeText={setCodigoInput} autoCapitalize="characters" editable={!chaveEditando} />
+            {chaveEditando && <Text style={styles.helper}>O código é a identidade histórica da chave e não pode ser alterado.</Text>}
             <TextInput style={styles.input} placeholder="Nome (Ex: Lab Info)" value={nomeInput} onChangeText={setNomeInput} />
             <TextInput style={[styles.input, { marginBottom: 24 }]} placeholder="Descrição" value={descricaoInput} onChangeText={setDescricaoInput} />
             <View style={styles.modalActions}>
@@ -178,6 +185,7 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: colors.surface, padding: 24, borderRadius: 16, ...shadows.card },
   modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
   input: { borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 12 },
+  helper: { color: colors.muted, fontSize: 12, marginTop: -6, marginBottom: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12 },
   modalBtnCancel: { padding: 12 },
   modalBtnTextCancel: { color: colors.muted, fontWeight: "bold" },

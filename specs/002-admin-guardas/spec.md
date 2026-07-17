@@ -25,13 +25,30 @@ Permitir que o administrador cadastre guardas no app web hospedado no Firebase H
 
 ## Requisitos não funcionais
 
-- Firestore nega por padrão e autoriza por `request.auth.uid` e perfil ativo.
-- Movimentações são imutáveis e vinculadas ao guarda autenticado.
-- Configuração pública Firebase vem de `EXPO_PUBLIC_FIREBASE_*`; credenciais administrativas não entram no bundle.
-- O primeiro administrador é provisionado uma única vez por ferramenta local segura.
+- **FR-001**: Firestore MUST negar por padrão e autorizar por `request.auth.uid` e perfil ativo.
+- **FR-002**: Movimentações MUST ser imutáveis e vinculadas ao guarda autenticado.
+- **FR-003**: Configuração pública Firebase MUST vir de `EXPO_PUBLIC_FIREBASE_*`; credenciais administrativas não entram no bundle.
+- **FR-004**: O primeiro administrador MUST ser provisionado uma única vez por ferramenta local segura.
+- **FR-005**: A matrícula do guarda MUST ser imutável porque define sua identidade técnica no Firebase Auth.
+- **FR-006**: Remoção de acesso MUST ocorrer por bloqueio lógico; o cliente sem privilégio Admin SDK não exclui contas do Firebase Auth.
+- **FR-007**: Sessões offline MUST pertencer ao mesmo UID autenticado e expirar após 12 horas sem validação remota.
+- **FR-008**: Chaves removidas MUST ser arquivadas logicamente para preservar o histórico.
+- **FR-009**: Conflitos offline MUST permanecer visíveis até retry ou descarte confirmado pelo operador.
+- **FR-010**: Ações administrativas MUST produzir eventos imutáveis de auditoria.
+- **FR-011**: Administradores MUST poder recuperar senha e a equipe autorizada MUST ter ferramenta local para redefinir PIN.
+
+## Critérios mensuráveis
+
+- **SC-001**: lint, typecheck, testes e build terminam com zero erros.
+- **SC-002**: testes no Emulator Suite comprovam deny-by-default, perfis ativo/inativo e proibição de escalada de privilégio.
+- **SC-003**: editar um guarda preserva matrícula e e-mail técnico de autenticação.
+- **SC-004**: uma sessão offline expirada ou pertencente a outro UID não é restaurada.
+- **SC-005**: nenhuma chave pode ser excluída fisicamente pelo cliente.
+- **SC-006**: pendências exibem motivo, tentativas e ações explícitas de retry/descarte.
 
 ## Fora de escopo
 
-- Redefinição de PIN pelo painel nesta entrega.
+- Redefinição de PIN pelo painel; a operação permanece em ferramenta local com Admin SDK.
+- Alteração de matrícula ou exclusão física da conta Auth pelo painel.
 - Criação de chaves pelo cliente.
 - Backend próprio, Render ou Cloud Functions.

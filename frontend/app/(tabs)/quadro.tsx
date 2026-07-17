@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Network from "expo-network";
 import { ChaveSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
 import { api } from "../../src/services/api";
 import { storage } from "../../src/services/storage";
@@ -17,6 +18,7 @@ type Chave = {
   status: "disponivel" | "em_uso";
   responsavelAtual: { nome: string; matricula: string } | null;
   ultimaMovimentacaoEm: string | null;
+  arquivada: boolean;
 };
 
 const FILTROS = [
@@ -69,8 +71,11 @@ export default function QuadroChavesScreen(): React.ReactNode {
   }, [carregarChaves]));
 
   useEffect(() => {
-    const interval = setInterval(() => void carregarChaves(), 15000);
-    return (): void => clearInterval(interval);
+    const interval = setInterval(() => void carregarChaves(), 30000);
+    const subscription = Network.addNetworkStateListener((estado): void => {
+      if (estado.isConnected && estado.isInternetReachable !== false) void carregarChaves();
+    });
+    return (): void => { clearInterval(interval); subscription.remove(); };
   }, [carregarChaves]);
 
   // Filtragem

@@ -79,6 +79,10 @@ npm run verify
 cd frontend
 npm run verify
 npm run build
+
+# Na raiz: valida autorização no Emulator Suite
+cd ..
+npm run rules:check
 ```
 
 O workflow em `.github/workflows/ci.yml` executa essas verificações em pushes e pull requests para `main`.
@@ -99,7 +103,7 @@ O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habi
 - toda leitura e escrita exige `request.auth != null`;
 - somente o administrador autenticado cria, lista, bloqueia ou reativa guardas;
 - o PIN fica apenas no Firebase Authentication e nunca é salvo no Firestore;
-- clientes não podem criar ou excluir chaves;
+- guardas não podem administrar chaves; administradores podem cadastrar, editar e arquivar, mas ninguém as exclui fisicamente pelo cliente;
 - uma chave só pode alternar `disponivel ↔ em_uso`;
 - cada alteração de chave exige uma movimentação correspondente na mesma transação;
 - a movimentação registra `autorUid == request.auth.uid`;
@@ -107,6 +111,13 @@ O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habi
 - coleções não declaradas são negadas por padrão.
 
 O administrador entra com e-mail e senha e cadastra cada guarda com nome, matrícula e PIN. Somente perfis ativos podem acessar as chaves; somente guardas podem registrar movimentações.
+
+## Operação administrativa
+
+- `npm run reset:guard-pin`: redefine o PIN usando `GUARD_MATRICULA` e `GUARD_NEW_PIN` no ambiente local seguro.
+- `npm run import:keys`: importa o arquivo `codigo;nome;descricao` indicado por `KEYS_CSV`.
+- `npm run export:history`: exporta movimentações para o caminho indicado por `HISTORY_CSV`.
+- A tela de auditoria lista as últimas 100 ações administrativas imutáveis.
 
 ## Documentação
 

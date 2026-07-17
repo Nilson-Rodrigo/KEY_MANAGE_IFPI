@@ -1,10 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
+import { Alert, View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { listarGuardas, cadastrarGuarda, editarGuarda, apagarGuarda, alterarStatusGuarda, type Usuario } from "../../src/services/auth";
+import { listarGuardas, cadastrarGuarda, editarNomeGuarda, alterarStatusGuarda, type Usuario } from "../../src/services/auth";
 import { SearchBar } from "../../src/presentation/components/SearchBar";
 import { showToast } from "../../src/presentation/components/Toast";
 import { colors, shadows } from "../../src/presentation/theme";
+
+function mensagemErro(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
 
 const AVATAR_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#F97316"];
 
@@ -29,7 +33,7 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
     try {
       const data = await listarGuardas();
       setGuardas(data);
-    } catch (error) {
+    } catch {
       showToast("Falha ao carregar guardas.", "error");
     } finally {
       setLoading(false);
@@ -44,14 +48,14 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
     return g.nome.toLowerCase().includes(q) || g.matricula.toLowerCase().includes(q);
   });
 
-  const handleSalvar = async () => {
+  const handleSalvar = async (): Promise<void> => {
     if (!nome.trim() || !matricula.trim()) {
       showToast("Preencha nome e matrícula.", "warning");
       return;
     }
     try {
       if (guardaEditando) {
-        await editarGuarda(guardaEditando, nome, matricula);
+        await editarNomeGuarda(guardaEditando, nome);
         showToast("Guarda atualizado com sucesso!", "success");
       } else {
         if (!pin.trim() || pin.length !== 6) {
@@ -63,42 +67,39 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
       }
       setModalVisible(false);
       void carregarGuardas();
-    } catch (error: any) {
-      showToast(error.message || "Falha ao salvar o guarda.", "error");
+    } catch (error: unknown) {
+      showToast(mensagemErro(error, "Falha ao salvar o guarda."), "error");
     }
   };
 
-  const handleApagar = async (guarda: Usuario) => {
-    try {
-      await apagarGuarda(guarda);
-      showToast(`${guarda.nome} foi removido do sistema.`, "success");
-      void carregarGuardas();
-    } catch (error: any) {
-      showToast(error.message || "Falha ao remover guarda.", "error");
-    }
-  };
-
-  const handleReativar = async (guarda: Usuario) => {
+  const handleReativar = async (guarda: Usuario): Promise<void> => {
     try {
       await alterarStatusGuarda(guarda, true);
       showToast(`${guarda.nome} foi reativado!`, "success");
       void carregarGuardas();
-    } catch (error: any) {
-      showToast(error.message || "Falha ao reativar guarda.", "error");
+    } catch (error: unknown) {
+      showToast(mensagemErro(error, "Falha ao reativar guarda."), "error");
     }
   };
 
-  const handleBloquear = async (guarda: Usuario) => {
+  const handleBloquear = async (guarda: Usuario): Promise<void> => {
     try {
       await alterarStatusGuarda(guarda, false);
       showToast(`${guarda.nome} foi bloqueado.`, "info");
       void carregarGuardas();
-    } catch (error: any) {
-      showToast(error.message || "Falha ao bloquear guarda.", "error");
+    } catch (error: unknown) {
+      showToast(mensagemErro(error, "Falha ao bloquear guarda."), "error");
     }
   };
 
-  const renderItem = ({ item }: { item: Usuario }) => {
+  const confirmarBloqueio = (guarda: Usuario): void => {
+    Alert.alert("Bloquear acesso?", `${guarda.nome} perderá o acesso aos dados protegidos.`, [
+      { text: "Cancelar", style: "cancel" },
+      { text: "Bloquear", style: "destructive", onPress: (): void => { void handleBloquear(guarda); } },
+    ]);
+  };
+
+  const renderItem = ({ item }: { item: Usuario }): React.ReactElement => {
     const bgColor = avatarColor(item.nome);
     return (
       <View style={[styles.card, !item.ativo && styles.cardInativo]}>
@@ -126,7 +127,7 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
             <MaterialCommunityIcons name="pencil" size={18} color={colors.brand} />
           </TouchableOpacity>
           {item.ativo ? (
-            <TouchableOpacity style={styles.iconBtn} onPress={() => void handleBloquear(item)}>
+            <TouchableOpacity style={styles.iconBtn} onPress={() => confirmarBloqueio(item)}>
               <MaterialCommunityIcons name="account-lock" size={18} color={colors.warning} />
             </TouchableOpacity>
           ) : (
@@ -134,9 +135,6 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
               <MaterialCommunityIcons name="account-check" size={18} color={colors.success} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity style={styles.iconBtn} onPress={() => void handleApagar(item)}>
-            <MaterialCommunityIcons name="delete" size={18} color={colors.danger} />
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -180,7 +178,8 @@ export default function GerenciarGuardasScreen(): React.ReactNode {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{guardaEditando ? "Editar Guarda" : "Novo Guarda"}</Text>
             <TextInput style={styles.input} placeholder="Nome" value={nome} onChangeText={setNome} />
-            <TextInput style={styles.input} placeholder="Matrícula" value={matricula} onChangeText={setMatricula} autoCapitalize="none" />
+            <TextInput style={styles.input} placeholder="Matrícula" value={matricula} onChangeText={setMatricula} autoCapitalize="none" editable={!guardaEditando} />
+            {guardaEditando && <Text style={styles.helper}>A matrícula é a identidade de acesso e não pode ser alterada.</Text>}
             {!guardaEditando && (
               <TextInput style={styles.input} placeholder="PIN (6 dígitos)" value={pin} onChangeText={setPin} keyboardType="numeric" maxLength={6} secureTextEntry />
             )}
@@ -225,6 +224,7 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: colors.surface, padding: 24, borderRadius: 16, ...shadows.card },
   modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
   input: { borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8, fontSize: 16, marginBottom: 12 },
+  helper: { color: colors.muted, fontSize: 12, marginTop: -6, marginBottom: 12 },
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 8 },
   modalBtnCancel: { padding: 12 },
   modalBtnTextCancel: { color: colors.muted, fontWeight: "bold" },

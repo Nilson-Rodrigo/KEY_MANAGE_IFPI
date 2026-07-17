@@ -1,5 +1,7 @@
 # Tasks: Stabilize Core Flows
 
+> **Archived:** these tasks are retained as transition history and are not the active backlog. Use `specs/002-admin-guardas/tasks.md`.
+
 ## Phase 1: Setup
 
 - [ ] T001 Protect credentials and machine state in `.gitignore`

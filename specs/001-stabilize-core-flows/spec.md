@@ -1,5 +1,7 @@
 # Feature Specification: Stabilize Core Flows
 
+> **Status: historical/superseded.** This specification described the transition away from the removed Express backend. The canonical implementation and remaining work are maintained in `specs/002-admin-guardas/` and the Firebase architecture documents.
+
 **Feature Branch**: `main`
 **Created**: 2026-07-16
 **Status**: Approved
