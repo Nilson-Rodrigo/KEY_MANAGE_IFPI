@@ -1,6 +1,6 @@
 # ADR 0009 — Adoção de Padrões de Projeto GoF para Refatoração Preventiva
 
-- **Status:** Proposto
+- **Status:** Rejeitado após a convergência Firebase documentada nas ADR-0010 a ADR-0015
 - **Data:** 2026-06-19
 - **Autor:** CoreTech
 

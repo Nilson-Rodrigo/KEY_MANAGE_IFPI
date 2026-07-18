@@ -1,2 +1,67 @@
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.firebase-cli-temp/
+.firebase-config/
+functions/lib/
+.firebase/
+frontend/.expo/
+frontend/dist/
+coverage/
+*.js.map
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+*.env.*
+!**/.env.example
+
+# Firebase Admin credentials (private)
+*firebase-adminsdk*.json
+service-account*.json
+*-firebase-adminsdk-*.json
+google-services.json
+**/google-services.json
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temp files
+*.tmp
+
+# Python (if applicable)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+
+# AI and Agent Tools
+.agents/
+.antigravity/
+.specify/
+agent-os/
+
+# Android/iOS Build Artifacts
+android/
+ios/
+.gradle/
+*.apk
+*.apk.idsig
+*.aab
+frontend/dist-android-check/
 # Template files
 PULL_REQUEST_TEMPLATE.md

@@ -1,20 +1,18 @@
-- # Documentação do Projeto — Índice
+# Documentação do Projeto — Índice
 
-Este diretório reúne as entregas e artefatos solicitados pelo professor e pela equipe.
-- `TEAM.md` — Cadastro do time, nome da equipe, visão do produto e público‑alvo.
-- `RVS.md` — Relatório de Viabilidade de Software (resumo executivo e conclusões).
-- `ERS.md` — Especificação de Requisitos do Software (requisitos funcionais e não‑funcionais).
-- `ADENDO_MIGRACAO_FIREBASE.md` — Adendo (14/07/2026) que registra a migração de PostgreSQL para Firebase sem alterar o RVS/ERS originais.
-- `REQS_HIERARCHY.md` — Hierarquia de requisitos: épicos → histórias → tarefas.
-- `PROTOTYPE.md` — Prototipação e links para wireframes/protótipos.
-- `STATUS_REPORT_1.md` — Relatório de status da primeira entrega/sprint.
-- `RESEARCH_PAPER.md` — Trabalho de Pesquisa: Anatomia e Padrões da Arquitetura.
-- `architecture/decisions/` — Registro de Decisões Arquiteturais (ADRs já existentes).
-- `CONTRIBUTORS.md` — Lista de integrantes.
-- `PROCUREMENT.md` — Licitações / aquisições.
-- `BRANCHING_POLICY.md` — Regras simples para organizar as branches.
+Este diretório reúne os artefatos existentes e vigentes do projeto CoreTech.
 
-Instruções rápidas
+- `PRD.md` — visão do produto, escopo, critérios e arquitetura atual.
+- `RVS.md` — relatório histórico de viabilidade de software.
+- `ERS.md` — especificação histórica de requisitos do software.
+- `ADENDO_MIGRACAO_FIREBASE.md` — evolução da persistência para Firestore e alinhamento da implantação atual.
+- `REQS_HIERARCHY.md` — épicos, histórias, tarefas e rastreabilidade.
+- `CONTRIBUTORS.md` — integrantes e responsabilidades.
+- `BRANCHING_POLICY.md` — política de branches.
+- `harness/HARNESS.md` — feedforward, feedback e CI.
+- `harness/prompts/feedforward.prompt.md` — template operacional de prompt.
+- `architecture/decisions/` — registros de decisões arquiteturais.
 
-- Preencha os arquivos com os conteúdos finais antes da submissão.
-- Verifique que cada documento contém os campos solicitados pelo professor.
+## Arquitetura vigente
+
+A decisão vigente é a ADR-0015: aplicativo Expo autenticado por e-mail/senha (administrador) ou matrícula/PIN sobre e-mail técnico (guarda) → Firestore direto, com cache e fila manual em AsyncStorage. O Firebase Hosting publica somente o frontend web.

@@ -3,9 +3,6 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "paths": {
-      "src/*": ["./src/*"]
-    },
     "outDir": "./dist",
     "rootDir": ".",
     "strict": true,
@@ -22,6 +19,6 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", "scripts/**/*.ts"],
-  "exclude": ["node_modules", "dist", "eslint.config.js", "vitest.config.ts", "tests"]
+  "include": ["scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist", "eslint.config.js", "frontend"]
 }

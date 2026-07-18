@@ -1,277 +1,142 @@
 # CoreTech — Sistema de Gerenciamento de Acesso a Chaves
 
-Sistema mobile offline-first desenvolvido para digitalizar o controle de retirada e devolução de chaves de salas e laboratórios do IFPI – Campus Piripiri.
+Aplicativo Expo offline-first para controlar retirada e devolução de chaves do IFPI Campus Piripiri.
 
-## Estado do Projeto
+## Arquitetura vigente
 
-Este repositório contém o **MVP completo** do projeto CoreTech, incluindo:
-- **PRD** — Documento de Requisitos de Produto.
-- **Specs** — Contratos OpenAPI + Schemas Zod.
-- **Harness** — Lint + Typecheck + Testes de Contrato automatizados.
-- **Código-fonte** — Implementação TypeScript seguindo SDD (Spec-Driven Development).
-- **Firebase** — Configuração de Firestore + Cloud Functions + Hosting.
+```text
+Expo / React Native
+  ├─ Firebase Authentication por e-mail/senha
+  ├─ Cloud Firestore (acesso direto, protegido por Security Rules)
+  └─ AsyncStorage (cache e fila offline)
 
-## Problema Resolvido
+Firebase Hosting
+  └─ frontend/dist (export web estático)
+```
 
-O controle manual de chaves na guarita do IFPI Campus Piripiri causa:
-- Transcrição manual entre turnos (25-30 min por troca).
-- Erros humanos e rasuras nos registros.
-- Falta de rastreabilidade e inconsistências.
-- Dependência de caderno físico e internet.
+Retiradas e devoluções são transações atômicas no Firestore: a mesma transação altera a chave e cria sua movimentação de auditoria.
 
-## Stack Tecnológica
+## Stack
 
 | Camada | Tecnologia |
-|--------|-----------|
-| Frontend mobile | React Native + Expo + TypeScript |
-| Backend / API | Firebase Cloud Functions (Node.js) |
-| Banco de dados | Firebase Cloud Firestore |
-| Cache local / Offline | Firestore SDK native cache |
-| Hospedagem | Firebase Hosting |
-| Validação | Zod (runtime schemas) |
-| Testes | Vitest |
-| Lint | ESLint + TypeScript ESLint |
-
-## Estrutura do Repositório
-
-```
-C:\KEY_MANAGE_IFPI\
-├── docs/                          # Documentacao (PRD, ERS, RVS, ADRs, Harness)
-├── src/
-│   ├── specs/                     # Contratos travados (OpenAPI + Zod)
-│   │   ├── openapi.yaml
-│   │   ├── schemas/
-│   │   │   ├── chaves.schema.ts
-│   │   │   ├── common.schema.ts
-│   │   │   ├── identificacao.schema.ts
-│   │   │   └── sync.schema.ts
-│   ├── core/                      # Nucleo (interfaces, tipos, repositories)
-│   │   ├── interfaces/index.ts
-│   │   ├── types/index.ts
-│   │   └── repositories/firestore.repository.ts
-│   ├── features/
-│   │   ├── chaves/                # Feature: gestao de chaves
-│   │   │   ├── chaves.service.ts
-│   │   │   └── strategies/
-│   │   │       ├── checkout.strategy.ts
-│   │   │       └── return.strategy.ts
-│   │   └── sync/                  # Feature: sincronizacao
-│   │       └── sync.service.ts
-│   ├── api/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   └── routes/
-│   └── index.ts                   # Entry point (Express + Firebase)
-├── tests/
-│   └── contracts/
-│       ├── chaves.contract.test.ts
-│       └── sync.contract.test.ts
-├── firebase.json
-├── firestore.rules
-├── .firebaserc
-├── package.json
-├── tsconfig.json
-├── vitest.config.ts
-├── eslint.config.js
-└── .github/workflows/ci.yml
-```
+|---|---|
+| Aplicativo | React Native + Expo + TypeScript |
+| Identidade e acesso | Firebase Auth + perfis admin/guarda no Firestore |
+| Banco | Cloud Firestore |
+| Offline | AsyncStorage + fila manual |
+| Web | Firebase Hosting |
+| Validação | Zod + Firestore Security Rules |
+| Qualidade | ESLint, TypeScript e Vitest |
 
 ## Pré-requisitos
 
-- Node.js >= 20
-- npm >= 10
-- Conta Firebase (projeto `coretech-chaves`)
-- Firebase CLI: `npm install -g firebase-tools`
-
-## Instalação e Configuração
-
-```bash
-# 1. Clonar o repositório
-git clone https://github.com/CoreTech-IFPI/coretech-chaves.git
-cd coretech-chaves
-
-# 2. Instalar dependencias
-npm install
-
-# 3. Configurar variaveis de ambiente
-cp .env.example .env
-# Editar .env com as credenciais do Firebase:
-# FIREBASE_PROJECT_ID=coretech-chaves
-# FIREBASE_CLIENT_EMAIL=...
-# FIREBASE_PRIVATE_KEY=...
-
-# 4. Login no Firebase
-firebase login
-firebase use --add
-```
-
-## Executando o Projeto
-
-### Pré-requisitos
 - Node.js 20+
-- Conta no Firebase com projeto `coretech-chaves`
-- Conta no Render (ou Railway) para deploy do backend
-- Expo CLI instalado globalmente
+- npm 10+
+- Firebase CLI
+- projeto Firebase `coretech-chaves-e62e7`
+- provedor **E-mail/senha** habilitado em Authentication → Sign-in method
+- Firestore criado no projeto
 
-### Backend — API + Firebase
+## Instalação
 
-#### Desenvolvimento local com emulador
 ```bash
-# Terminal 1: iniciar emulador do Firestore
-firebase emulators:start --only firestore
-
-# Terminal 2: popular banco com dados de teste
-npm run seed
-
-# Terminal 3: iniciar API
-npm run dev
-```
-
-#### Deploy em produção (Render)
-1. Acesse https://dashboard.render.com
-2. Clique em **New +** → **Blueprint**
-3. Conecte o repositório `Nilson-Rodrigo/KEY_MANAGE_IFPI`
-4. O `render.yaml` será detectado automaticamente
-5. Adicione a variável de ambiente faltante no dashboard do Render:
-   - `FIREBASE_PRIVATE_KEY` = sua private key do Firebase (não comite este valor)
-6. Clique em **Apply** e aguarde o deploy
-
-A API em produção ficará disponível em `https://coretech-chaves-api-hj3k.onrender.com/v1`.
-
-### Frontend — App Expo (mobile)
-
-#### Desenvolvimento local
-```bash
+npm ci
 cd frontend
-
-# Windows
-start.bat
-
-# macOS/Linux
-export TEMP="$HOME/.cache"
-export TMP="$HOME/.cache"
-npx expo start
+npm ci --legacy-peer-deps
 ```
 
-#### Build de produção (EAS Build)
+Copie `frontend/.env.example` para `frontend/.env.local` e preencha as variáveis públicas do aplicativo web obtidas em **Firebase Console → Configurações do projeto → Seus apps**. Nenhuma credencial administrativa é incluída no app.
+
+O primeiro administrador é criado por ferramenta local, usando a credencial de serviço apenas fora do aplicativo:
+
 ```bash
+# Preencha FIREBASE_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS e ADMIN_* no .env
+npm run provision:admin
+```
+
+Depois disso, o administrador entra em `/admin` e cadastra os guardas com nome, matrícula e PIN de seis dígitos.
+
+## Desenvolvimento
+
+```bash
+# Emuladores de Auth, Firestore e Hosting
+firebase emulators:start --only auth,firestore,hosting
+
+# Aplicativo Expo
 cd frontend
-npx eas build --platform android --profile preview
-```
-
-O APK gerado pode ser instalado diretamente em qualquer dispositivo Android.
-
-#### Configuração da URL da API
-Para desenvolvimento local, defina a variável de ambiente:
-```bash
-# Windows (PowerShell)
-$env:EXPO_PUBLIC_API_URL="http://192.168.0.2:3001"
-
-# macOS/Linux
-export EXPO_PUBLIC_API_URL="http://192.168.0.2:3001"
-```
-
-Para produção, edite `frontend/constants.ts` e substitua pela URL pública do Render.
-
-### Apenas o servidor API
-```bash
-npm run dev
-```
-
-### Build para produção
-```bash
-npm run build
-npm start
-```
-start-web.bat
-```
-
-O app consome a API pela variável `EXPO_PUBLIC_API_URL`.
-
-### Apenas o servidor API
-```bash
-npm run dev
-```
-
-### Build para produção
-```bash
-npm run build
 npm start
 ```
 
-### Build do APK com EAS Build
-```bash
-cd frontend
-npx eas build --platform android --profile preview
-```
+Para usar emuladores no aplicativo, a conexão explícita aos emuladores deve estar habilitada no cliente antes do build. Sem isso, o app usa o projeto Firebase configurado.
 
-## Executando o Harness (Verificação Automática)
-
-O Harness executa três sensores em sequência:
+## Verificação
 
 ```bash
+# Contratos e testes do repositório
 npm run verify
-# = npm run lint && npm run typecheck && npm run test
+
+# Frontend
+cd frontend
+npm run verify
+npm run build
+
+# Na raiz: valida autorização no Emulator Suite
+cd ..
+npm run rules:check
 ```
 
-| Sensor | Comando | O que valida |
-|--------|---------|--------------|
-| Lint | `npm run lint` | Estilo, anti-padrões estruturais, imports proibidos. |
-| Typecheck | `npm run typecheck` | Contratos de tipos, campos obrigatórios. |
-| Testes | `npm run test` | Regras de negócio (RN01, RN05, RN07). |
+O workflow em `.github/workflows/ci.yml` executa essas verificações em pushes e pull requests para `main`.
 
-### Testes individuais
+## Deploy
+
 ```bash
-npm run test              # Executa todos os testes
-npm run test:watch        # Modo watch para desenvolvimento
+cd frontend
+npm run build
+cd ..
+firebase deploy --only hosting,firestore:rules
 ```
 
-## Endpoints da API
+O Hosting publica exclusivamente `frontend/dist`. Antes do primeiro deploy, habilite Authentication por e-mail/senha, crie o perfil inicial do administrador e revise as regras com o Emulator Suite.
 
-| Método | Rota | Descrição | RF/RN |
-|--------|------|-----------|-------|
-| POST | `/v1/identificacao` | Registrar identificacao do guarda | RF01, RN02 |
-| GET | `/v1/chaves` | Listar quadro virtual de chaves | RF02, RF03 |
-| GET | `/v1/chaves/{codigo}` | Consultar detalhes de uma chave | RF02, RF03, RN04 |
-| GET | `/v1/chaves/{codigo}/historico` | Consultar historico de movimentacoes | RF09 |
-| POST | `/v1/chaves/{codigo}/retirada` | Registrar retirada de chave | RF04, RF05, RN01 |
-| POST | `/v1/chaves/{codigo}/devolucao` | Registrar devolucao de chave | RF06, RN05 |
-| POST | `/v1/sync` | Sincronizar lote de registros pendentes | RF07, RF08, RN07 |
+## Modelo de segurança
 
-## Documentação Adicional
+- toda leitura e escrita exige `request.auth != null`;
+- somente o administrador autenticado cria, lista, bloqueia ou reativa guardas;
+- o PIN fica apenas no Firebase Authentication e nunca é salvo no Firestore;
+- guardas não podem administrar chaves; administradores podem cadastrar, editar e arquivar, mas ninguém as exclui fisicamente pelo cliente;
+- uma chave só pode alternar `disponivel ↔ em_uso`;
+- cada alteração de chave exige uma movimentação correspondente na mesma transação;
+- a movimentação registra `autorUid == request.auth.uid`;
+- movimentações não podem ser alteradas ou excluídas pelo cliente;
+- coleções não declaradas são negadas por padrão.
 
-- [PRD](docs/PRD.md) — Product Requirement Document.
-- [ERS](docs/ERS.md) — Especificação de Requisitos de Software.
-- [RVS](docs/RVS.md) — Relatório de Viabilidade de Software.
-- [REQS_HIERARCHY](docs/REQS_HIERARCHY.md) — Backlog e rastreabilidade.
-- [ADR 0010](docs/architecture/decisions/0010-substituicao-do-postgresql-pelo-firebase-firestore.md) — Substituição de PostgreSQL por Firestore.
-- [ADR 0011](docs/architecture/decisions/0011-adocao-do-firebase-como-hospedagem.md) — Adoção do Firebase como hospedagem.
-- [ADR 0012](docs/architecture/decisions/0012-estrategia-de-sincronizacao-offline-firestore.md) — Sincronização offline via Firestore.
-- [Harness](docs/harness/HARNESS.md) — Documentação do AI Harness.
+O administrador entra com e-mail e senha e cadastra cada guarda com nome, matrícula e PIN. Somente perfis ativos podem acessar as chaves; somente guardas podem registrar movimentações.
 
-## Critérios de Aceitação do MVP
+## Operação administrativa
 
-- [x] PRD alinha visão de negócio e escopo técnico.
-- [x] Specs (OpenAPI + Zod) travadas antes da implementação.
-- [x] Código implementado via SDD, sem divergência das specs.
-- [x] Harness operacional: lint + typecheck + testes de contrato passam.
-- [x] RN01 bloqueia retirada duplicada (HTTP 409).
-- [x] RN05 bloqueia devolução de chave já disponível (HTTP 409).
-- [x] RN07 aplica LWW na sincronização.
-- [x] Firebase configurado (Firestore + Cloud Functions + Hosting).
-- [x] CI/CD rodando `npm run verify` em todo Pull Request.
+- `npm run reset:guard-pin`: redefine o PIN usando `GUARD_MATRICULA` e `GUARD_NEW_PIN` no ambiente local seguro.
+- `npm run import:keys`: importa o arquivo `codigo;nome;descricao` indicado por `KEYS_CSV`.
+- `npm run export:history`: exporta movimentações para o caminho indicado por `HISTORY_CSV`.
+- A tela de auditoria lista as últimas 100 ações administrativas imutáveis.
+
+## Documentação
+
+- [PRD](docs/PRD.md)
+- [ERS](docs/ERS.md)
+- [RVS](docs/RVS.md)
+- [Adendo Firebase](docs/ADENDO_MIGRACAO_FIREBASE.md)
+- [ADR 0015 — arquitetura vigente](docs/architecture/decisions/0015-firebase-auth-anonimo-firestore-direto.md)
+- [Harness](docs/harness/HARNESS.md)
 
 ## Equipe
 
 | Integrante | Função |
-|------------|--------|
+|---|---|
 | Wesley Tiago | Scrum Master |
 | Antônio Carlos | Product Owner |
 | Ana Rosa Pereira Chaves | Analista de Requisitos |
 | Eric Vinicius | UX/UI |
-| Roger Pierre | Desenvolvedor Full Stack |
-| Nilson Rodrigo | Desenvolvedor Full Stack |
+| Roger Pierre | Desenvolvimento Full Stack |
+| Nilson Rodrigo | Desenvolvimento Full Stack |
 
----
-
-*Projeto acadêmico — Engenharia de Software II — IFPI Campus Piripiri — Professor Mayllon Veras*
+Projeto acadêmico — Engenharia de Software II — IFPI Campus Piripiri.

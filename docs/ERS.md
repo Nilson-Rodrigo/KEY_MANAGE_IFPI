@@ -1,5 +1,7 @@
 # Documento de Requisitos de Software (ERS)
 
+> **Documento histórico de levantamento.** As referências abaixo a Express, PostgreSQL, SQLite e autenticação anônima foram substituídas. Para implementação e operação, prevalecem o `README.md`, o adendo Firebase, a ADR-0015 e `specs/002-admin-guardas/`.
+
 ## Sistema de Gerenciamento de Acesso a Chaves de Salas e Laboratórios
 
 | Informação  | Descrição                 |
@@ -21,7 +23,7 @@
 
 ---
 
-> **Nota de atualização (14/07/2026):** este documento reflete o levantamento de requisitos original, concluído em Abril de 2026. Em 14/07/2026 a equipe migrou a persistência de PostgreSQL para Firebase (Firestore). Ver `docs/ADENDO_MIGRACAO_FIREBASE.md` e as ADRs 0010–0013 para o detalhamento técnico completo desta mudança.
+> **Nota de atualização:** este documento reflete o levantamento de requisitos original, concluído em abril de 2026. A persistência atual usa Firestore direto após autenticação por e-mail/senha e perfis, com offline manual no AsyncStorage. Ver `docs/ADENDO_MIGRACAO_FIREBASE.md`, ADR-0010 e ADR-0015.
 
 ## 1. Introdução
 

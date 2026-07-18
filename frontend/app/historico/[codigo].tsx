@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { MovimentacaoSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
 import { api } from "../../src/services/api";
+import { AppButton } from "../../src/presentation/components/AppButton";
+import { colors, shadows } from "../../src/presentation/theme";
 
 type Movimentacao = {
   id: string;
   chaveCodigo: string;
   tipo: "retirada" | "devolucao";
   responsavel: { nome: string; matricula: string };
+  aluno: { nome: string; matricula?: string };
   timestampLocal: string;
   deviceId: string;
   syncStatus: string;
@@ -16,17 +19,27 @@ type Movimentacao = {
 
 export default function HistoricoDetalheScreen(): React.ReactNode {
   const params = useLocalSearchParams<{ codigo: string }>();
-  const codigo = CodigoChaveSchema.parse(params.codigo);
+  const codigoRaw = typeof params.codigo === "string" ? decodeURIComponent(params.codigo) : params.codigo;
+  const codigoValidado = CodigoChaveSchema.safeParse(codigoRaw);
+  const codigo = codigoValidado.success ? codigoValidado.data : null;
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+  const router = useRouter();
 
   const carregarHistorico = async (): Promise<void> => {
+    if (!codigo) {
+      setErro("Código de chave inválido.");
+      setCarregando(false);
+      return;
+    }
+    setErro("");
     try {
       const data = await api.buscarHistorico(codigo);
       const movimentacoesValidadas = data.map((item: unknown) => MovimentacaoSchema.parse(item));
       setMovimentacoes(movimentacoesValidadas);
     } catch {
-      // fallback silencioso para manter funcionamento offline
+      setErro("Não foi possível carregar o histórico.");
     } finally {
       setCarregando(false);
     }
@@ -38,20 +51,21 @@ export default function HistoricoDetalheScreen(): React.ReactNode {
 
   const renderItem = ({ item }: { item: Movimentacao }): React.ReactElement => (
     <View style={styles.card}>
-      <Text style={styles.tipo}>{item.tipo.toUpperCase()}</Text>
-      <Text style={styles.responsavel}>
-        {item.responsavel.nome} ({item.responsavel.matricula})
-      </Text>
-      <Text style={styles.data}>{new Date(item.timestampLocal).toLocaleString()}</Text>
+      <View style={[styles.timelineDot, { backgroundColor: item.tipo === "retirada" ? colors.warning : colors.success }]} />
+      <View style={styles.cardContent}><Text style={[styles.tipo, { color: item.tipo === "retirada" ? colors.warning : colors.success }]}>{item.tipo === "retirada" ? "RETIRADA" : "DEVOLUÇÃO"}</Text><Text style={styles.responsavel}>{item.aluno.nome}</Text>{item.aluno.matricula ? <Text style={styles.meta}>Matrícula do aluno: {item.aluno.matricula}</Text> : null}<Text style={styles.meta}>Operador: {item.responsavel.nome}</Text><Text style={styles.data}>{new Date(item.timestampLocal).toLocaleString("pt-BR")}</Text></View>
     </View>
   );
 
   if (carregando) {
     return (
       <View style={styles.center}>
-        <Text>Carregando histórico...</Text>
+        <ActivityIndicator color={colors.brand} size="large" /><Text style={styles.loadingText}>Carregando histórico...</Text>
       </View>
     );
+  }
+
+  if (erro) {
+    return <View style={styles.center}><Text style={styles.errorTitle}>Não conseguimos carregar</Text><Text style={styles.loadingText}>{erro}</Text><AppButton label="Tentar novamente" onPress={() => void carregarHistorico()} /><AppButton label="Voltar" variant="ghost" onPress={() => router.back()} /></View>;
   }
 
   return (
@@ -61,6 +75,8 @@ export default function HistoricoDetalheScreen(): React.ReactNode {
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={<View style={styles.hero}><Text style={styles.kicker}>LINHA DO TEMPO</Text><Text style={styles.heroTitle}>Chave {codigo}</Text><Text style={styles.heroSubtitle}>{movimentacoes.length} movimentações registradas</Text></View>}
+        ListEmptyComponent={<View style={styles.emptyCard}><Text style={styles.emptyTitle}>Sem movimentações</Text><Text style={styles.empty}>Esta chave ainda não possui registros.</Text></View>}
       />
     </View>
   );
@@ -69,34 +85,48 @@ export default function HistoricoDetalheScreen(): React.ReactNode {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    gap: 12,
+    padding: 24,
   },
   list: {
     padding: 16,
     gap: 12,
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
   },
+  hero: { paddingVertical: 10, gap: 3 }, kicker: { color: colors.accent, fontSize: 11, fontWeight: "800", letterSpacing: 1.3 }, heroTitle: { color: colors.text, fontSize: 28, fontWeight: "800" }, heroSubtitle: { color: colors.muted },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
     padding: 16,
-    gap: 4,
+    gap: 12,
+    flexDirection: "row",
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
   },
+  timelineDot: { width: 12, height: 12, borderRadius: 6, marginTop: 4 }, cardContent: { flex: 1, gap: 3 },
   tipo: {
     fontSize: 12,
-    color: "#2563eb",
     fontWeight: "bold",
   },
   responsavel: {
     fontSize: 14,
-    color: "#374151",
+    color: colors.text,
+    fontWeight: "700",
   },
+  meta: { color: colors.muted, fontSize: 12 },
   data: {
     fontSize: 12,
-    color: "#6b7280",
+    color: colors.muted,
+    marginTop: 4,
   },
+  loadingText: { color: colors.muted, textAlign: "center" }, errorTitle: { color: colors.text, fontSize: 21, fontWeight: "800" }, emptyCard: { alignItems: "center", backgroundColor: colors.surface, borderRadius: 16, padding: 28, borderWidth: 1, borderColor: colors.border }, emptyTitle: { color: colors.text, fontWeight: "800", fontSize: 17 }, empty: { textAlign: "center", color: colors.muted, marginTop: 5 },
 });

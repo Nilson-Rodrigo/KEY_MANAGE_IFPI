@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  verify-backend:
+  verify-admin-tooling:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout codigo
@@ -21,17 +21,14 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Lint (Camada 1 — estilo)
-        run: npm run lint
-
-      - name: Typecheck (Camada 2 — tipos)
-        run: npm run typecheck
-
-      - name: Testes de Contrato (Camada 3 — regras de negocio)
-        run: npm run test
-
-      - name: Harness completo
+      - name: Validar tooling administrativo
         run: npm run verify
+
+      - name: Compilar tooling administrativo
+        run: npm run build
+
+      - name: Validar regras de segurança no emulador
+        run: npm run rules:check
 
   verify-frontend:
     runs-on: ubuntu-latest
@@ -48,6 +45,14 @@ jobs:
         working-directory: frontend
         run: npm ci --legacy-peer-deps
 
-      - name: Lint do frontend
+      - name: Harness do frontend
         working-directory: frontend
-        run: npx eslint . --ext .ts --config eslint.config.js
+        run: npm run verify
+
+      - name: Build web do frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Validar projeto Expo
+        working-directory: frontend
+        run: npx expo-doctor

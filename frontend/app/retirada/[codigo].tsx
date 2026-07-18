@@ -1,67 +1,60 @@
 import { useState } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { RegistroMovimentacaoRequestSchema, CodigoChaveSchema } from "../../src/specs/schemas/chaves.schema";
 import { api } from "../../src/services/api";
-
-type FormData = {
-  responsavelNome: string;
-  responsavelMatricula: string;
-};
+import { storage } from "../../src/services/storage";
+import { useApp } from "../../src/context/AppContext";
+import { AppButton } from "../../src/presentation/components/AppButton";
+import { MovementCard } from "../../src/presentation/components/MovementCard";
+import { colors } from "../../src/presentation/theme";
+import { showToast } from "../../src/presentation/components/Toast";
 
 export default function RetiradaScreen(): React.ReactNode {
   const params = useLocalSearchParams<{ codigo: string }>();
-  const codigo = CodigoChaveSchema.parse(params.codigo);
-  const [form, setForm] = useState<FormData>({ responsavelNome: "", responsavelMatricula: "" });
+  const codigoRaw = typeof params.codigo === "string" ? decodeURIComponent(params.codigo) : params.codigo;
+  const codigoValidado = CodigoChaveSchema.safeParse(codigoRaw);
+  const codigo = codigoValidado.success ? codigoValidado.data : null;
+  const { nomeGuarda, matriculaGuarda } = useApp();
   const [enviando, setEnviando] = useState(false);
   const router = useRouter();
 
   const handleRetirada = async (): Promise<void> => {
+    if (!codigo) return;
+    const deviceId = await storage.getDeviceId();
     const parsed = RegistroMovimentacaoRequestSchema.safeParse({
-      responsavel: { nome: form.responsavelNome, matricula: form.responsavelMatricula },
+      responsavel: { nome: nomeGuarda, matricula: matriculaGuarda },
       timestampLocal: new Date().toISOString(),
-      deviceId: "expo-device",
+      deviceId,
     });
 
     if (!parsed.success) {
-      Alert.alert("Validação", "Preencha todos os campos obrigatórios.");
+      showToast("Preencha todos os campos obrigatórios.", "warning");
       return;
     }
 
     setEnviando(true);
     try {
       await api.retirarChave(codigo, parsed.data);
-      Alert.alert("Sucesso", "Retirada registrada com sucesso.", [
-        { text: "OK", onPress: (): void => router.back() },
-      ]);
+      showToast("Retirada registrada com sucesso.", "success");
+      router.back();
     } catch (error) {
       if (error instanceof Error && "status" in error && (error as Error & { status: number }).status === 409) {
-        Alert.alert("Chave indisponível", error.message ?? "Esta chave já está em uso.");
+        showToast(error.message ?? "Esta chave já está em uso.", "warning");
         return;
       }
-      Alert.alert("Erro", "Não foi possível registrar a retirada.");
+      showToast("Não foi possível registrar a retirada.", "error");
     } finally {
       setEnviando(false);
     }
   };
 
+  if (!codigo) {
+    return <View style={styles.container}><Text style={styles.title}>Código de chave inválido.</Text><AppButton label="Voltar" onPress={() => router.back()} /></View>;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Retirada — {codigo}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Nome do responsável"
-        value={form.responsavelNome}
-        onChangeText={(text) => setForm({ ...form, responsavelNome: text })}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Matrícula do responsável"
-        value={form.responsavelMatricula}
-        onChangeText={(text) => setForm({ ...form, responsavelMatricula: text })}
-      />
-      <Button title={enviando ? "Registrando..." : "Registrar retirada"} onPress={handleRetirada} disabled={enviando} />
-    </View>
+    <MovementCard kind="retirada" codigo={codigo} nome={nomeGuarda} matricula={matriculaGuarda} loading={enviando} onConfirm={() => void handleRetirada()} />
   );
 }
 
@@ -70,17 +63,12 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     gap: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
+  operador: { backgroundColor: "#eff6ff", borderRadius: 8, padding: 12, gap: 3 },
+  operadorLabel: { color: "#1d4ed8", fontWeight: "700" },
 });

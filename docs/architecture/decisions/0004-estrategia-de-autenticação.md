@@ -1,6 +1,6 @@
 # ADR 0004 — Estratégia de Autenticação
 
-- **Status:** Aceito
+- **Status:** Substituído pela ADR-0015
 - **Data:** 2026-05-28
 - **Autor:** CoreTech
 

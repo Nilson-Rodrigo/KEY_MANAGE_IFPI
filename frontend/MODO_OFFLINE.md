@@ -17,7 +17,7 @@ Quando estiver sem conexão:
 
 ### 3. Sincronização Automática
 - Quando a conexão for restabelecida, todas as operações pendentes serão sincronizadas automaticamente
-- O app verifica o status da conexão a cada 5 segundos
+- O app reage ao retorno da rede e mantém uma verificação de segurança a cada 30 segundos
 
 ## Como Funciona
 
@@ -85,7 +85,7 @@ npm install
 
 ## Próximos Passos (Sugestões)
 
-- [ ] Adicionar botão manual para sincronizar
-- [ ] Mostrar contador de operações pendentes
+- [x] Adicionar botão manual para sincronizar
+- [x] Mostrar contador de operações pendentes
 - [ ] Implementar resolução de conflitos mais sofisticada
-- [ ] Adicionar notificação quando sincronização falhar
+- [x] Adicionar central com motivo quando sincronização falhar

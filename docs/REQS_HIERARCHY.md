@@ -1,5 +1,7 @@
 # Modelagem: Do Épico à Tarefa — Backlog do MVP com Rastreabilidade
 
+> **Baseline histórica.** A stack Express/PostgreSQL/SQLite deste documento não é executável nem canônica. O backlog vigente é `specs/002-admin-guardas/tasks.md`; a arquitetura vigente usa Firebase Auth por e-mail/senha, Firestore direto e AsyncStorage.
+
 ## Sistema de Gerenciamento de Acesso a Chaves de Salas e Laboratórios
 
 | Informação             | Descrição                                      |

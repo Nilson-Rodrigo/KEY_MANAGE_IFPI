@@ -1,6 +1,6 @@
 # ADR 0006 — Estratégia de Sincronização Offline
 
-- **Status:** Aceito
+- **Status:** Substituído pela ADR-0012
 - **Data:** 2026-05-28
 - **Autor:** CoreTech
 
