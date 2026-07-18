@@ -59,4 +59,6 @@ android/
 ios/
 .gradle/
 *.apk
+*.apk.idsig
 *.aab
+frontend/dist-android-check/
