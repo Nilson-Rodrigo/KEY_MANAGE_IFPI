@@ -3,6 +3,7 @@
     "rules": "firestore.rules"
   },
   "hosting": {
+    "site": "coretech-chaves-e62e7",
     "public": "frontend/dist",
     "ignore": [
       "firebase.json",
